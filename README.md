@@ -4,11 +4,12 @@ Manuscript in review
 ## Predictive performance of multinomial logistic prediction models
 * Author of this file and of the final version of the code: Mohamad Bazzi
 * File last modified: December 2021
-* Code last modified: < December 2021
+* Code last modified: December 2021
 * This is code for the following manucript: X
 
 * For questions, email: 
     * Mohamad.Bazzi@uzh.ch
+    * Mohammed_Bazzi@hotmail.com
 
 ## How to...
 1. [Get started](#start)
