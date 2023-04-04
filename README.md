@@ -1,4 +1,4 @@
-# Nature-2022
+# Turtle Project
 Manuscript in review
 
 ## Predictive performance of multinomial logistic prediction models
@@ -8,7 +8,7 @@ Manuscript in review
 * This is code for the following manucript: X
 
 * For questions, email: 
-    * Mohamad.Bazzi@uzh.ch
+    * Bazzi@ug.kth.se
     * Mohammed_Bazzi@hotmail.com
 
 ## How to...
@@ -39,9 +39,33 @@ Manuscript in review
     a. 
     b. 
 
-#### 6. X <a name="plots"></a>
-    a. See 1, 2 and 4. for generating data.
-    b. See 1 and 5 for loading of data.
-    c. Run "Plots 2nd sub.R"
-
 #### The end
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+# reports
+
+<!-- badges: start -->
+<!-- badges: end -->
+
+This repo contains miscellaneous reports in quarto (`.qmd`), Rmarkdown
+(`.Rmd`) etc. The aim is to use this repo when we need to collaborate on
+reports, especially ones that include both text and code.
+
+## Adding reports
+
+Create **separate subfolders** for each project and put all necessary
+assets there, such as shared data sets, scripts, quarto documents and
+other necessary files. Name subfolders in a descriptive way, preferrably
+prefixed with creation year (i.e. “2023_project_name”).
+
+> NB: Do not add indvidual files larger than 50 Mb here, please ([why
+> not?](https://rtyley.github.io/bfg-repo-cleaner/)). Larger assets can
+> be instead be added as GitHub Releases if required and can then be
+> accessed from within a report using
+> [`piggyback`](https://github.com/ropensci/piggyback)!
+
+Specific functions attached to projects can be included as well, but
+ideally most reusable functions should be placed in other repos
+(`bibliotools`, `bibliomatrix` etc) and this repo should mainly contain
+text and code related to specific analyses and reports.
