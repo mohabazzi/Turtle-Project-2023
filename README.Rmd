@@ -16,13 +16,31 @@ knitr::opts_chunk$set(
 <!-- badges: start -->
 <!-- badges: end -->
 
-This repo contains miscellaneous reports in quarto (`.qmd`), Rmarkdown (`.Rmd`). The aim is to use this repo when we need to collaborate on reports, especially ones that include both text and code.
+This GitHub repository contains the code used in analysis of all datasets used in __Cold-adapted Cretaceous polar turtle resolves the trans-Antarctic radiations of Testudinata__
 
-## Adding reports
+by Benjamin P. Kear, Márton Rabi, Martin Kundrát, Michael S. Y. Lee, Daniel Snitting,
+Peter Trussler, Mohamad Bazzi, Barbara E. Wagstaff, Dorris E. Seegets-Villiers, Thomas H. Rich, Patricia Vickers-Rich & Lesley Kool
 
-Create __separate subfolders__ for each project and put all necessary assets there, such as shared data sets, scripts, quarto documents and other necessary files. Name subfolders in a descriptive way, preferrably prefixed with creation year (i.e. "2023_project_name").
+Code written and maintained by Mohamad Bazzi
+Contact: bazzi@ug.kth.se
 
-> NB: Do not add indvidual files larger than 50 Mb here, please ([why not?](https://rtyley.github.io/bfg-repo-cleaner/)). Larger assets can be instead be added as GitHub Releases if required and can then be accessed from within a report using [`piggyback`](https://github.com/ropensci/piggyback)!
-Specific functions attached to projects can be included as well, but ideally most reusable 
-functions should be placed in other repos (`bibliotools`, `bibliomatrix` etc) and this repo should 
-mainly contain text and code related to specific analyses and reports. 
+## Access .Rdata
+
+T
+
+```{r}
+require(piggyback)
+tempdir()
+pb_download(file = "default.RData",dest = tempdir(),repo = "KTH-Library/reports",tag = "v1.0.0")
+load(file = file.path(tempdir(),"default.RData"))
+```
+
+require(piggyback)
+tempdir()
+pb_download(file = "default.RData",dest = tempdir(),repo = "KTH-Library/reports",tag = "v1.0.0")
+load(file = file.path(tempdir(),"default.RData"))
+
+**Data files included:**
+
+Measurement File.csv - Extant and fossil testudinatan forelimb proportion dataset of Joyce & Gauthier.
+
