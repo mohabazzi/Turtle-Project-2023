@@ -1,0 +1,992 @@
+---
+title: "Cold-adapted Cretaceous polar turtle resolves the trans-Antarctic radiations of Testudinatas"
+author:
+  - name: Mohamad Bazzi
+    corresponding: false
+    orcid: 0000-0002-9495-0781
+    email: bazzi@kth.se
+    affiliations:
+      - name: KTH Royal Institute of Technology
+        address: Osquars backe 31
+        city: Stockholm
+        postal-code: 114 28
+  - name: Benjamin P. Kear, Márton Rabi, Martin Kundrát, Michael S. Y. Lee, Daniel Snitting,
+          Peter Trussler, Mohamad Bazzi, Barbara E. Wagstaff,
+          Dorris E. Seegets-Villiers, Thomas H. Rich, Patricia Vickers-Rich &
+          Lesley Kool
+highlight-style: pygments
+format:
+  html:
+    toc: true
+    toc-expand: 5
+    toc-location: left
+    code-fold: true
+    html-math-method: katex
+    embed-resources: true
+editor_options: 
+  chunk_output_type: console
+---
+
+------------------------------------------------------------------------
+
+## Libraries
+
+```{r message=FALSE,warning=FALSE, results='hide'}
+# update.packages(checkBuilt = TRUE, ask = FALSE)
+
+R.packages <- c("openxlsx","tidyverse","mice","caret","corrplot","jmv",
+                "ggfortify","GGally","MASS","MuMIn","DMwR2","tidyr",
+                "nnet","gridExtra","VIM","lmtest","RColorBrewer","performance",
+                "ggstance","visdat","naniar","wesanderson","DescTools",
+                "car","qgraph","ggeffects","ggthemes","knitr","stargazer",
+                "kableExtra","marginaleffects","generalhoslem","purrr",
+                "magrittr","UBL","checkpoint","data.table","DiagrammeR")
+
+invisible(lapply(R.packages,library,character.only = TRUE))
+
+# checkpoint::checkpoint("2022-12-27")
+```
+
+## Custom functions
+
+```{r}
+# Pearson's coefficient of skewness.
+skewness <- function(x) {
+  n <- length(x)
+  numerator <- sum((x - mean(x))^3) / n
+  denominator <- (sum((x - mean(x))^2) / n)^(3/2)
+  numerator/denominator
+}
+# Interquartile Range.
+outliers <- function(x) {
+  iqr = quantile(x, probs=.75,na.rm = F) - quantile(x, probs=.25,na.rm = F)
+  upper_limit = quantile(x, probs=.75,na.rm = F) + (iqr*1.5)
+  lower_limit = quantile(x, probs=.25,na.rm = F) - (iqr*1.5)
+  ifelse(x > upper_limit | x < lower_limit, TRUE, FALSE)
+}
+# Remove outliers.
+remove_outliers <- function(df, cols = names(df)) {
+  outliers_count <- rowSums(sapply(df[,cols],outliers))
+  
+  df[outliers_count == 0,]
+  }
+```
+
+## Data-driven flowchart
+
+```{r}
+DiagrammeR::grViz("
+digraph {
+  graph [layout = dot, rankdir = TB]
+  
+  node [shape = rectangle, style = filled, fillcolor = Linen]
+  
+  data [label = 'Extant and fossil data', shape = folder, fillcolor = Beige]
+  explore [label = 'Data exploration']
+  outlier [label = 'Outlier detection and removal']
+  impute [label = 'Estimating missing values for fossil data']
+  perf [label = 'Imputation performance and variable correlation']
+  split [label = 'Train-Test split']
+  model [label = 'Fitting multinomial logistic model']
+  validation [label = 'Model performance using cross-validation']
+  prediction [label = 'Fossil prediction']
+  
+  data -> explore
+  explore -> outlier
+  outlier -> impute
+  impute -> perf
+  split -> model
+  outlier -> split [style = dashed]
+  model -> validation
+  impute -> prediction
+  model -> prediction [style = dashed]
+}
+")
+```
+
+## Exploratory Data Analysis
+
+**Dataset.** The dataset utilized in this study consists of predictor variables representing length measurements, with the dependent variable of interest being habitat classification. These variables are utilized in the evaluation of model performance.
+
+```{r}
+# Data Input.
+Turtle.Df <- utils::read.csv2(file = "Measurement File.csv",header = T)
+# Change character class into factors.
+Turtle.Df <- Turtle.Df %>%
+  dplyr::mutate_if(is.character,as.factor)
+# Sample size: check for class imbalance.
+Turtle.Df %>%
+  dplyr::count(Habitat) %>%
+  dplyr::mutate('%' = round(n/sum(n),2)) %>%
+  knitr::kable() %>% kable_styling(bootstrap_options = "striped", full_width = F)
+```
+
+**Missingness.** Data missingness is moderate with a total of 32 missing values out of 288 cells (11.1% missingness). Specifically, there are 6 missing values for the variable 'Humerus length', 10 missing values for 'Ulna length', and 16 missing values for 'Manual Digit III length'.
+
+```{r message=FALSE,warning=FALSE,fig.cap="Pattern of missingness by dependendent variable (i.e. habitat)"}
+# Pattern of missingness.
+Turtle.Df[,4:7] %>%
+  naniar::gg_miss_var(facet = Habitat,show_pct = FALSE) +
+  labs(x = "") +
+  theme_bw()+ theme(aspect.ratio = 1/2)
+```
+
+```{r message=FALSE,warning=FALSE, results='hide'}
+# Check for missing values.
+sum(is.na(Turtle.Df[,4:6]))
+# By column.
+sapply(Turtle.Df, function(x) sum(is.na(x)))
+# What's the percentage rate of missingness?
+paste0(round(mean(is.na(Turtle.Df[,4:6])), digits = 3) * 100,'%')
+```
+
+```{r message=FALSE,warning=FALSE,fig.cap="Heatmap. Pattern of missingness by independent/explanatory variable"}
+# Visualize.
+visdat::vis_miss(x = Turtle.Df[,4:6],sort_miss = T,show_perc_col = T) + 
+  theme(aspect.ratio = 1)
+# Manual computation
+formatC(unlist(lapply(Turtle.Df[,4:6],function(x) sum(is.na(x))))/
+  nrow(Turtle.Df[,4:6]) * 100,digits = 2,format = "f")
+```
+
+**Little's MCAR test.** Our data is not missing completely at random (p \<\< 0.0001).
+
+```{r}
+naniar::mcar_test(Turtle.Df[,4:6])
+```
+
+**Test of normality.** The Shapiro-Wilk test was used to assess the normality of the distribution of the predictor variables. The P-values obtained from the test were less than the chosen significance level, indicating that the null hypothesis of normality for the predictor variables could not be accepted. This was further supported by visualizing the distribution of the predictor variables using **Quantile-Quantile (Q-Q)** plots, which showed a departure from the normal distribution, specifically in the form of a right-skewed distribution for the un-transformed variables.
+
+```{r results='hide'}
+# Is the distribution of the data normal? Limited to extant complete specimens.
+apply(X = Turtle.Df[1:77,4:6], MARGIN = 2, FUN = shapiro.test) %>%
+  lapply(function(x) data.frame(statistic = x$statistic, p.value = x$p.value)) %>%
+  bind_rows() %>% tibble::rownames_to_column(var = "Variable") %>% 
+  mutate(Variable = case_when(Variable == "W...1" ~ "Humerus.Length",
+                              Variable == "W...2" ~ "Ulna.Length",
+                              Variable == "W...3" ~ "Digit.III",
+                              TRUE ~ Variable)) %>% 
+  knitr::kable() %>% 
+  kable_styling(bootstrap_options = "striped", full_width = F)
+```
+
+```{r fig.cap="Normality test, data distribution, and QQ-plot. Graphic results reveal an overall right-skewness in each un-transformed numeric variable. P-values are based on a Shapiro-Wilk Normality Test"}
+# Plot using a qqplot.
+layout(matrix(c(1:3),nrow = 1), widths=c(3,3,3), heights=c(4,4,4),respect = TRUE)
+
+for(i in 1:ncol(Turtle.Df)) {
+  if(is.numeric(Turtle.Df[1:77,i])) {
+      shapiro.test(Turtle.Df[1:77,i])
+      car::qqPlot(x = Turtle.Df[1:77,i],col = scales::alpha("#b11226",.5),
+                  layout = c(1,3),
+                  envelope = F,col.lines = 'black',
+                  pch = 19,cex = 1.2,xlab = '',ylab = '',
+                  main = paste(colnames(Turtle.Df)[i], "QQ Plot", sep = " "),
+                  lwd = 2,grid = FALSE)
+      title(xlab = "Theoretical Quantiles", ylab = 'Sample Quantiles',
+        col = 'black',font.lab = 2)
+      par(usr = c(0,1,0,1))
+      text(x = 0.5, y = 0.5, 
+           labels=paste("W=",round(shapiro.test(Turtle.Df[1:77,i])$statistic,3),  
+                        "\nP = ", round(shapiro.test(Turtle.Df[1:77,i])$p.value,3)),
+           pos = 3, cex = 0.8,col = "black", xpd = TRUE)
+  }
+}
+```
+
+### Pair-wise correlation
+
+```{r fig.cap="Pair-wise correlation. Coefficient statistics was computed using spearman's correlation method"}
+trait_cor <- cor(Turtle.Df %>% dplyr::select_if(is.numeric),
+                 use = "complete.obs",method = "spearman")
+
+corrplot::corrplot(trait_cor, tl.cex = 1,tl.srt=0,
+                   type = "lower",col = rev(brewer.pal(n=8, name="PuOr")),
+                   addgrid.col = "grey",addCoef.col = "white",
+                   sig.level = 1, insig = "blank",
+                   title = "Spearman correlation",
+                   mar=c(0,0,2,0),
+                   addCoefasPercent = TRUE, tl.col = "black",
+                   number.cex = .8)
+```
+
+### Descriptive statistics
+
+```{r}
+jmv.tab <- jmv::descriptives(data = Turtle.Df,
+                             vars = vars(Humerus.Length,Ulna.Length,Digit.III),
+                             splitBy = Habitat,freq = TRUE,missing = T,se = T)
+print(jmv.tab)
+```
+
+### Check and visualization of data balance
+
+```{r fig.cap="Data balance. Proportional representation of categorical variables"}
+# Check proportional representation of main grouping variable.
+t.prop <- prop.table(table(Turtle.Df$Habitat))
+
+barplot(t.prop, las = 1, col = c(rep("white",3),rep("#b11226",1)),
+        ylab = "%",lwd = 2,xlab = "Habitat", cex.lab = 1,font.lab = 2,
+        horiz = F,density = c(0,0,0,7),angle = c(0,0,0,36),
+        main = "");abline(v = 3.7, lwd = 2)
+```
+
+### Heatmap
+
+```{r fig.cap="Heatmap showing the number of specimens by habitat and family"}
+Turtle.Df %>%
+  ggplot(aes(x = Habitat, y = Higher.Taxon)) +
+  geom_bin2d(show.legend = T) +
+  scale_fill_gradientn(colours = wes_palette("Zissou1",100, type = "continuous")) +
+  labs(y = "Taxon",x = "",fill = "Count") +
+  coord_equal(ratio = 1.5/3) + theme_bw() +
+  theme(axis.text.x = element_text(angle = 44,hjust = 1,vjust = 1)) + 
+  theme_clean()
+```
+
+### Outlier detection
+
+```{r "Box-and-whisker plot visualization. Inspection of potential outliers."}
+boxplot(Turtle.Df[1:77,c("Humerus.Length","Ulna.Length","Digit.III")])
+```
+
+```{r fig.cap="Box-and-whisker plot visualization. Inspection of potential outliers by categorical variable"}
+# Graphic layout.
+layout(matrix(c(1:3),nrow = 1,ncol = 3),
+       heights = c(4,4),widths = c(3,3,3),
+       respect = T)
+
+op = par(font.lab = 2)
+
+# Box plot on un-transformed data variables.
+for(i in 1:ncol(Turtle.Df)) {
+  if(is.numeric(Turtle.Df[,i])) {
+    boxplot(Turtle.Df[,i] ~ Habitat,data = Turtle.Df, asp = 1,
+            pars = NULL,
+            cex = 1,las = 2,cex.axis = .7,xlab = "",
+            ylab = colnames(Turtle.Df)[i],
+            col = c(rep("white",3),scales::alpha(rep("#b11226",1)),.5),
+            border = "black",
+            frame.plot = F,x.angle = 60,
+            boxwex = 0.8,staplewex = 0.5,
+            boxlwd = 2,medlwd = 2,outpch = 21)
+  }
+}
+
+# Add title
+mtext(text = "Visual inspection of potential outliers",
+      side = 3,line = 2,at = -4,cex = 1,font = 2); par(op)
+```
+
+```{r}
+# Set row-names.
+rownames(Turtle.Df) <- paste(Turtle.Df$Species,Turtle.Df$Specimen)
+```
+
+```{r results='hide'}
+# Five number summary method.
+out_var <- lapply(Turtle.Df[,sapply(Turtle.Df,is.numeric)],boxplot.stats)
+# Rownames of the outliers.
+out_list <- sapply(Turtle.Df[,sapply(Turtle.Df, is.numeric)], function(x) {
+  stats <- boxplot.stats(x)
+  rownames(Turtle.Df)[which(x %in% stats$out)]
+})
+```
+
+### Outlier removal
+
+```{r}
+# Extant turtle data.
+extant.Df <- Turtle.Df[1:77,4:7]
+# Clean with outliers removed using the IQR method: N = 67.
+clean.Df <- remove_outliers(extant.Df,c("Humerus.Length","Ulna.Length","Digit.III"))
+# Omitted taxa: N = 10.
+omit.Df <- extant.Df[rownames(extant.Df) %in% 
+                     generics::setdiff(rownames(extant.Df),rownames(clean.Df)),]
+# Create clean dataframe with extinct species included: N = 86.
+clean.Df <- rbind(clean.Df,Turtle.Df[78:96,4:7])
+```
+
+------------------------------------------------------------------------
+
+## Single and multiple imputation
+
+1.  IRMI (iterative robust model-based imputation)
+
+2.  Multiple imputation by chained equations (MICE)
+
+```{r echo=TRUE, results='hide',message=FALSE,warning=FALSE}
+# Single IRMI.
+set.seed(1)
+imp.1 <- VIM::irmi(x = clean.Df[,1:3],robust = TRUE,imp_var = F,trace = T)
+imp.1 <- round(imp.1,digits = 2)
+# Multiple IRMI.
+set.seed(2)
+imp.2 <- VIM::irmi(x = clean.Df[,1:3],robust = TRUE,mi = 11,imp_var = F)
+# Any missing values?
+sapply(imp.2,function(x) any(is.na(x)))
+# Add imputed values as a unique column to dataframe.
+colnames(imp.1) <- c("Irmi.Humerus","Irmi.Ulna","Irmi.Digit")
+# Merge.
+compFin.Df <- cbind(clean.Df,imp.1)
+# Add identifier variable. 
+Measurement <- as.factor(c(rep("Raw",67),rep("Imputed",17),rep("Raw",2)))
+# New factor.
+compFin.Df$Measurement <- Measurement
+# Species name
+species_name <- rownames(clean.Df)[68:86]
+```
+
+### Imputation consistency
+
+```{r echo=TRUE}
+# Pull out extinct taxa that have been estimated.
+irmi_extinct <- lapply(imp.2,FUN = slice,68:86)
+# Function to add rownames and new column
+w <- function(x){
+  row.names(x) <- as.character(rownames(clean.Df[68:86,]))
+  cbind(x, taxa = as.factor(rownames(clean.Df[68:86,])))
+  }
+
+irmi_var <- lapply(irmi_extinct,FUN = w)
+
+# Combine dataframes.
+irmi_multiple <- irmi_var %>% bind_rows(.id = "id")
+irmi_multiple %>%
+  tidyr::pivot_longer(cols = -c(id,taxa), names_to = "variable", values_to = "value") %>%
+  ggplot(aes(x = taxa, y = value, color = variable)) +
+  geom_point() +
+  scale_color_manual(values = c("#00AFBB", "#E7B800", "#FC4E07")) +
+  scale_fill_manual(values = c("#00AFBB", "#E7B800", "#FC4E07")) +
+  stat_summary(fun = mean, geom = "point", fill = "grey70", color = "black") +
+  stat_summary(fun.data = mean_cl_normal, geom = "errorbar", width = 0.2, color = "black") +
+  facet_wrap(~ variable,scales = "free") +
+  labs(y = "Value", x = "", title = "Imputation variance across all irmi-generated datasets",
+       subtitle = "95% confidence intervals") +
+  theme(axis.text.x = element_text(angle = 45,hjust = 1, vjust = 1,size = 2),
+        aspect.ratio = 1/2,legend.position = "none")
+```
+
+### Imputation performance
+
+```{r results='hide'}
+# Randomly introduce missing values.
+pM.extant <- clean.Df[1:67,1:3]
+# Custom function.
+generate_random_NA <- function(df, missing_prob = 0.1) {
+  # Copy.
+  df_NA <- df
+  # Loop through each column of the dataframe
+  for (col in 1:ncol(df_NA)) {
+    # Generate a random number between 0 and 1 for each element in the column
+    rand_nums <- runif(nrow(df_NA))
+    # Check if each element should be replaced with NA based on the 
+    # missing probability
+    for (i in 1:nrow(df_NA)) {
+        if (rand_nums[i] < missing_prob) {
+            # check if all the other element of the row are NA
+            if(sum(is.na(df_NA[i,]))==ncol(df_NA)-1) next;
+            df_NA[i,col] <- NA
+        }
+    }
+  }
+
+  return(df_NA)
+}
+
+set.seed(3)
+
+# Create missingness.
+Missing_20 <- generate_random_NA(pM.extant,missing_prob = 0.2)
+Missing_30 <- generate_random_NA(pM.extant,missing_prob = 0.3)
+Missing_40 <- generate_random_NA(pM.extant,missing_prob = 0.4)
+Missing_50 <- generate_random_NA(pM.extant,missing_prob = 0.5)
+
+# List.
+random_list <- list(Missing_20,Missing_30,Missing_40,Missing_50)
+# Run irmi imputation on all data frames and save results.
+impute_list <- vector(mode='list', length=4)
+
+set.seed(4)
+
+# Run imputation on all m copies.
+for(i in seq_along(random_list)) {
+  impute_res <- irmi(random_list[[i]],robust = FALSE,imp_var = T)
+  impute_list[[i]] <- impute_res
+}
+
+# Correlation test (Humerus length).
+Humerus.Path <- "Imputation-Performace_Humerus.xlsx"
+Humerus_list <- list()
+# Import data file
+for(i in c(1:4)) {
+  Humerus.Data <- read.xlsx(Humerus.Path,i)
+  Humerus_list[[i]] <- Humerus.Data
+}
+
+cor_humerus_list <- lapply(Humerus_list, function(x) cor(x[,"Humerus.Imputed"],
+                                                         x[,"Humerus.Acctual"]))
+# Correlation test (Ulna length).
+Ulna.Path <- "Imputation-Performace_Ulna.xlsx"
+Ulna_list <- list()
+
+for(i in c(1:4)) {
+  Ulna.Data <- read.xlsx(Ulna.Path,i)
+  Ulna_list[[i]] <- Ulna.Data
+}
+
+cor_ulna_list <- lapply(Ulna_list, function(x) cor(x[,"Ulna.Imputed"],
+                                                   x[,"Ulna.Acctual"]))
+# Correlation test (Digit III length).
+Digit.Path <- "Imputation-Performace_Digit.xlsx"
+Digit_list <- list()
+
+for(i in c(1:4)) {
+  Digit.Data <- read.xlsx(Digit.Path,i)
+  Digit_list[[i]] <- Digit.Data
+}
+
+cor_digit_list <- lapply(Digit_list, function(x) cor(x[,"Digit.Imputed"],
+                                                     x[,"Digit.Acctual"]))
+```
+
+**Results**:
+
+```{r fig.cap="The figures display bivariate plots comparing observed and imputed values per variable, with the median represented by solid lines."}
+# Graphic layout,
+layout(matrix(c(1:3), nrow = 1, ncol = 3,byrow = FALSE),
+       heights = c(2.5,2.5,2.5),widths = c(2,2,2),
+       respect = TRUE)
+
+irmi.cols <- c(5:7)
+
+for(i in irmi.cols) {
+  if(is.numeric(compFin.Df[,i]))
+    plot(compFin.Df[,i], col = c("#1c4966", "#b11226")[compFin.Df$Measurement],
+         pch = 21, bg = "white",
+         ylab = colnames(compFin.Df)[i], font.lab = 2)
+  abline(h = median(compFin.Df[compFin.Df$Measurement == "Raw",i]), col = "#b11226")
+  abline(h = median(compFin.Df[compFin.Df$Measurement == "Imputed",i]),
+         col = "#1c4966")
+  legend("topleft",legend = c("Raw","Imputed"),
+         col = c("#b11226","#1c4966"),lty = 1,lwd = 2, border = FALSE,
+         bty = "n",cex = .3)
+}
+```
+
+### MICE (Multiple imputation by chained equations)
+
+```{r results='hide',message=FALSE, fig.cap="Box-and-whisker plot comparing the distribution of observed and imputed data for multiple imputation using chained equations"}
+# Object contain 11 imputed dataset(s)
+# Predictive mean matching
+imp.3 <- mice(data = clean.Df[,1:3], m = 11, method = "pmm",
+              seed = 1991,print = T, remove.collinear = F,printFlag = FALSE)
+
+# Check predictor matrix
+imp.3$predictorMatrix
+# Diagnostics.
+stripplot(imp.3,  pch = c(1, 20))
+
+# Check correlation between variables.
+with(imp.3, cor(Humerus.Length, Ulna.Length))
+with(imp.3, cor(Humerus.Length, Digit.III))
+with(imp.3, cor(Ulna.Length, Digit.III))
+
+# Are there any negative values?
+sum(imp.3$imp$Humerus.Length < 0)
+sum(imp.3$imp$Ulna.Length < 0)
+sum(imp.3$imp$Digit.III < 0)
+
+# Complete mice dataset as list.
+complete_mice <- mice::complete(data = imp.3,"all",inc = FALSE)
+```
+
+```{r results='hide'}
+# Add new species column.
+taxa_labels <- rownames(complete_mice[[1]])
+complete_mice <- lapply(complete_mice,
+                        function(x) cbind(x, taxa = as.factor(taxa_labels)))
+```
+
+------------------------------------------------------------------------
+
+## Final data wrangling
+
+1.  The **comp_list** includes all observations for which habitat is recorded. This also means that every dataset in this list are identical all across.
+2.  The **miss_list** includes all observations for which habitat was not recorded.
+
+```{r}
+# Extant raw data.
+o1 <- lapply(imp.2,FUN = slice,1:67)
+# Extinct imputed data: habitat designated observations as 'Unknown' (N=19)
+o2 <- lapply(imp.2,FUN = slice,68:86)
+
+# Filter and pre-process data list.
+comp_list <- lapply(o1, function(x) {
+  subset <- clean.Df[1:67, "Habitat"]
+  # Add habitat back to the list.
+  x <- cbind(x, Habitat = as.factor(droplevels(subset)))
+  # Reorder variables.
+  x <- x[, c("Habitat", "Humerus.Length", "Ulna.Length", "Digit.III")]
+})
+
+miss_list <- o2
+
+# Remove taxon label.
+# comp_list <- lapply(complete_list, function(x){x["taxa"] <- NULL; x})
+```
+
+#### Multicollinearity
+
+```{r fig.cap="Correlation network"}
+# Extract the first dataset from the comp_list
+all.Df <- comp_list[[1]] # No. 67 observations.
+
+# Average and standard deviation.
+knitr::kable(
+  data.frame(mean = (apply(all.Df[,2:4],2,mean)),
+             sd = (apply(all.Df[,2:4],2,sd)))) %>% 
+  kable_styling(bootstrap_options = "striped")
+
+# Final check of multicollinearity.
+var_names <- c("Humerus","Ulna","Digit III")
+
+qgraph(abs(cor(sapply(all.Df[,2:4],as.numeric),method = "spearman")),
+       graph = "pcor", layout = "spring",vsize = 6,
+       nodeNames = var_names, legend.cex = 0.4)
+```
+
+#### Variance inflation factor index
+
+```{r results='hide'}
+# NB: VIF > 10 is considered to be problematic (see Greene, W 2012).
+car::vif(lm(as.integer(Habitat) ~ 
+              Humerus.Length + Ulna.Length + Digit.III, data = all.Df))
+car::vif(lm(as.integer(Habitat) ~
+              Humerus.Length + Digit.III, data = all.Df))
+car::vif(lm(as.integer(Habitat) ~
+              Ulna.Length + Digit.III, data = all.Df))
+
+# Durbin-Watson Test.
+lmtest::dwtest(lm(as.integer(Habitat) ~
+                    Humerus.Length + Ulna.Length + Digit.III, data = all.Df))
+lmtest::dwtest(lm(as.integer(Habitat) ~
+                    Humerus.Length + Digit.III, data = all.Df))
+lmtest::dwtest(lm(as.integer(Habitat) ~
+                    Ulna.Length + Digit.III, data = all.Df))
+```
+
+```{r warning=FALSE,message=FALSE, fig.cap="Variance Inflation Factor"}
+grid.draw(rbind(arrangeGrob(
+  plot(check_collinearity(lm(as.integer(Habitat) ~ Humerus.Length + Ulna.Length + Digit.III,data = all.Df))),
+  plot(check_collinearity(lm(as.integer(Habitat) ~ Humerus.Length + Digit.III,data = all.Df))),ncol = 2)))
+```
+
+```{r warning=FALSE,message=FALSE,fig.cap="Side-by-side box-and-whisker plot of anatomical descriptors. Data have been pre-processed and does not include influential observations identified based on IQR-criterion. Confidence intervals obtained via non-parametric bootstrapping."}
+melt_boxplot <- reshape2::melt(all.Df)
+	   
+ggplot(melt_boxplot, mapping = aes(x = Habitat, y = value, fill = Habitat)) +
+  geom_boxplot(aes(Habitat),alpha = 1, outlier.size = 2) +
+  stat_summary(fun.data = mean_cl_boot, geom = "errorbar",width = .10,
+               linetype = 1, col = "black") +
+  stat_summary(fun = "mean", geom = "point",
+               position = position_dodge(width = 1),
+               bg = 'white',color = "black", pch = 21) +
+  # geom_jitter() +
+  scale_fill_manual(values = c("#0072B2", "#E69F00", "#009E73")) +
+  theme_minimal() +
+  geom_rug(sides = 'l') +
+  theme(aspect.ratio = 1/5) +
+  labs(x = "", y = "") +
+  theme(axis.text.x = element_text(angle = 45,vjust = .5,hjust = .5),
+        axis.text.y = element_text(size = 7),
+        axis.title.y = element_text(size = 7,face = "bold"),
+        strip.text.x = element_text(size = 6,face = "bold"),
+        aspect.ratio = 2) +
+  facet_wrap(~variable,scales = "free_y")
+```
+
+------------------------------------------------------------------------
+
+## Multinomial logistic regression
+
+**Workflow**
+
+1.  We first checked for **near zero or zero-variance** for any of the predictors.
+
+2.  The **variance inflation factor** and a **Durbin Watson test** (see previous section) confirm the presence of multicollinearity. The redundancy introduced by the near exact collinearity between the 'Humerus' and 'Ulna' length variables impacts the MLR-coefficient estimations. Combining these two variable into one did not solve the problem either. We therefore decided to drop the 'Ulna' variable from our classification analysis.
+
+3.  We fitted a **MLR-model** using the full dataset (i.e., here also refereed to as training set) for which habitat ID's were available to estimate nominal outcome variables.
+
+    -   This dataset have already been pre-processed with influential outlier points omitted.
+
+    -   The analysis was performed on the raw-data and not on log-10 transformed variables.
+
+    -   The Aquatic class was used as the baseline category.
+
+    -   We validated the **accuracy** of this model by examining the match between predicted vs. actual outcomes.
+
+    -   We also computed other metrics (e.g., Kappa, Precision, Recall, and F-Measure score).
+
+    -   We also conducted a **drop-in-deviance test** to determine the influence of potential non-informative predictors on our main model.
+
+    -   We proceeded to visualize the prediction results using stacked bar plots with the probabilities of each category shown by taxa.
+
+4.  We proceeded to estimate response probabilities on the **IRMI** datasets (both single and multiple). We summarized the probabilities across all iterations and visualized the results using pie graphs.
+
+5.  Finally, we explored oversampling via SMOTE and Random over-sampling to test the effect of class imbalance. Accordingly, we re-fitted a new series of multinomial logistic models and evaluated their respective accuracy.
+
+**Model terms**
+
+-   Habitat = Unordered nominal (i.e., categorical or polytomous 'dependent/response' variable).
+
+-   Humerus Length = numeric independent/predictor variable.
+
+-   Digit III Length = numeric independent/predictor variable.
+
+```{r results='hide'}
+# Near zero-variance? No.
+nearZeroVar(all.Df[2:4], saveMetrics = T) %>% smoothScatter()
+nearZeroVar(all.Df[c(2,4)], saveMetrics = T)
+
+# Drop Ulna from the dataframe.
+Final.Df <- all.Df[c(1:2,4)]
+
+# Training and testing for the purpose of cross-validation.
+set.seed(123)
+idx <- caret::createDataPartition(Final.Df$Habitat, p = 0.7, list = FALSE)
+train_data <- Final.Df[idx,] # 48
+test_data <- Final.Df[-idx,] # 19
+
+# Null (or empty) multinomial model. By default a basement/reference level will be selected alphabetically.The logistic coefficient is the expected amount of change in the logit for each one unit change in the predictor.
+set.seed(1995)
+mod.intercept <- multinom(formula = Habitat ~ 1, data = train_data, 
+                          Hess = T,model = T)
+
+summary(mod.intercept)$coefficients
+# Table.
+stargazer(mod.intercept, type="text", out="intercept-only-model.htm",
+          title = "Estimated Parameters (and Standard Errors) from intercept-only multinomial logistic regression")
+```
+
+#### **Log-odds**
+
+$$
+\text{log}\frac{p_{i}}{p_{K}} = \beta_{i0} + \beta_{i1}x_{1} + \beta_{i2}x_{2} + ... + \beta_{ip}x_{p}
+$$
+
+where:
+
+-   $p_{i}$ is the probability of outcome $i$
+-   $p_{K}$ is the probability of the reference outcome $K$
+-   $\beta_{i0}$ is the intercept coefficient for outcome $i$
+-   $\beta_{i1}, \beta_{i2}, ..., \beta_{ip}$ are the coefficients for predictor variables $x_{1}, x_{2}, ..., x_{p}$ for outcome $i$.
+
+#### Estimated probability distribution
+
+```{r}
+phi <- rbind(Aquatic = 0, coef(mod.intercept)) %>%
+  as_tibble(rownames = 'id') %>%
+  deframe()
+
+scales::percent(exp(phi)/sum(exp(phi)),accuracy = 0.01)
+```
+
+$$
+p_{ij} = \frac{\exp\{\beta_{0j} + \beta_{1j}X_i\}}{1 + \sum\limits_{j=2}^k \exp\{\beta_{0j} + \beta_{1j}X_i\}}
+$$
+
+```{r warning=FALSE,results='hide'}
+# Full multinomial model
+# Does the inclusion of predictor variables improve the model fit? Yes.
+# By default, coefficients are interpreted as relative log-odds.
+summary(mod.3 <- multinom(Habitat ~., data = train_data,Hess = T,model = T)) %>% 
+  magrittr::extract('coefficients')
+
+## Exponentiating the slope coefficients gives odds ratios (i.e., relative risks), relative to the baseline category.
+data.frame(t(exp(summary(mod.3)$coefficients))) %>% 
+  round(digits = 3)
+
+## Relative risks
+relative.risks <- exp(coef(mod.3))
+
+# Table along with p-value statistics for predictor variables.
+stargazer(mod.3, type="text",
+          coef=list(relative.risks), p.auto=FALSE, out="multinomial-model.htm",
+          title = "Estimated Parameters (and Standard Errors) from multinomial logistic regression with predictor variables",
+          column.labels = c("vs. Aquatic","vs. Aquatic"))
+
+# Two-tailed z test.
+z <- summary(mod.3)$coefficients/summary(mod.3)$standard.errors
+p <- (1 - pnorm(abs(z), 0, 1))*2 # Predictors are all significant.
+
+## Convert odds ratio into a proportion.
+2.94/(1 + 2.94) #
+0.19/(1 + 0.19) #
+7.12/(1 + 7.12) #
+0.03/(1 + 0.03) #
+```
+
+```{r}
+# knitr::kable(label = "Estimated parameters, standard errors, and Wald test statistics for MLR Model.
+#                       Estimates have been rounded to two decimal places. From the P values we can tell that all
+#                       variables are significant at 5% level")
+```
+
+**Equation 1: Category B (Semi-aquatic) compared to Category A (Aquatic)**
+
+$$
+\log\left(\frac{P{category = Semi-aquatic}}{P{category = Aquatic}}\right) = -2.067 + 1.08(Humerus) - 1.646 (DigitIII)
+$$
+
+**Equation 2: Category C (Terrestrial) compared to Category A (Aquatic)**
+
+$$
+\log\left(\frac{P{category = Terrestrial}}{P{category = Aquatic}}\right) = -1.470 + 1.964 (Humerus) - 3.275 (Digit III)
+$$
+
+**Coefficients and relative risk**
+
+-   The log-odds of Y = Semi-aquatic versus Y = Aquatic increases by 1.08 for every one-unit change in humerus length. The corresponding odds ratio is 2.94, with a standard error of 0.44, a Wald-statistic of 2.45, and a significant p-value of 0.01.
+
+-   Conversely, the log-odds of Y = Semi-aquatic versus Y = Aquatic decreases by 1.64 for every one-unit change in manus digit-III length. The corresponding odds ratio is 0.19, with a standard error of 0.67, a Wald-statistic of -2.44, and a significant p-value of 0.01.
+
+-   A one-unit increase in humerus length is associated with a 1.96 increase (or 87.7%) in the log odds of a turtle species being classified as Terrestrial rather than Aquatic. The corresponding odds ratio is 7.12, with a standard error of 0.72, a Wald-statistic of 2.69, and a significant p-value of 0.007.
+
+-   The log-odds of Y = Terrestrial versus Y = Aquatic decreases by 3.27 for every one-unit change in manus digit-III length. The corresponding odds ratio is 0.03, with a standard error of 1.22, a Wald-statistic of -2.67, and a significant p-value of 0.007.
+
+#### **Predicted probabilities**
+
+Expected probabilities for each level of the outcome variable based on the model coefficients.
+
+```{r}
+# Aquatic
+prob_A <- 1/(1 + exp(-2.067267+1.081415-1.646390) + exp(-1.470641+1.964182 -3.275062))
+# Semi-aquatic
+prob_SA <- exp(-2.067267+1.081415-1.646390)/(1 + exp(-2.067267+1.081415-1.646390) + exp(-1.470641+1.964182 -3.275062))
+# Terrestrial
+prob_T <- exp(-1.470641+1.964182 -3.275062)/(1 + exp(-2.067267+1.081415-1.646390) + exp(-1.470641+1.964182 -3.275062))
+```
+
+#### Model assessment: Goodness-of-fit statistics
+
+```{r warning=FALSE}
+#     Analysis of deviance:
+#     This is a measure of goodness-of-fit test statistics (i.e., high deviance indicates a bad fit).
+good.fit <- mod.intercept$deviance - mod.3$deviance
+# The (non-central) Chi-Squared Distribution
+pchisq(q = good.fit,df = mod.3$edf, lower.tail=FALSE)
+# Likelihood ratio chi-square:
+anova(mod.3,mod.intercept,test = "Chisq")$LR[2]
+lrtest(mod.3,mod.intercept)
+
+#     Goodness of fit.
+#     Observed vs. expected
+ch.q <- chisq.test(x = train_data$Habitat,predict(mod.3),simulate.p.value = T)
+#     Hosmer and Lemeshow test (multinomial model)
+#     Pearson’s chi-squared statistic, Degrees of freedom, and significance.
+#     Null hypothesis is retained.
+logitgof(train_data$Habitat, fitted(mod.3))
+```
+
+#### Pseudo R-Squares
+
+```{r results='hide'}
+# Pseudo-R2.
+DescTools::PseudoR2(x = mod.3, which = c("CoxSnell","Nagelkerke","McFadden"))
+# Likelihood Ratio Tests: the LRT is the Chisq statistic.
+LRT <- MASS::dropterm(mod.3, trace=FALSE, test="Chisq")
+LRT %>% print()
+
+# Influential variables.
+var.imp <- varImp(mod.3)
+var.imp$var <- rownames(var.imp)
+
+var.imp %>% ggplot(aes(x=var, y=Overall)) +
+  geom_segment(aes(x=var, xend=var, y=0, yend=Overall), color="grey") +
+  geom_point(color="black", size=4) + ylab("Influential variables") + xlab("")+
+  theme_light()
+```
+
+#### Drop-in-deviance test
+
+```{r}
+mod.4 <- nnet::multinom(Habitat ~ Digit.III,
+                        data = train_data,
+                        Hess = T,model = T) %>% suppressMessages()
+
+kable(stats::anova(mod.3, mod.4, test = "Chisq"), format = "markdown")
+```
+
+#### Repeated K-fold cross-validation
+
+```{r results='hide'}
+# Perform cross-validation to select the best parameters
+fit.control <- caret::trainControl(method = "repeatedcv",number = 10, repeats = 1000)
+# Repeatability of results
+set.seed(1998)
+fit.cv <- caret::train(Habitat ~., data = train_data, method = "multinom",
+                       trControl = fit.control,
+                       verboseIter = TRUE,trace = FALSE)
+
+## Classification table of MNL.
+confusionMatrix(data = fit.cv)
+# Misclassification rate
+cat("Misclassification rate:", paste0(round(1 - 0.8329, 2)),"%")
+
+# Model validation/performance using the test set.
+predictTest <- predict(mod.3, newdata = test_data, type = "class")
+# F1-score, recall, and precision, etc.
+performance.Df <- data.frame(obs =  test_data$Habitat, pred = predictTest)
+classes <- c("Aquatic", "Semi-aquatic", "Terrestrial")
+# Threshold-dependent vs invariant metrics.
+multiClassSummary(data = performance.Df,lev = classes)[c("Accuracy","Kappa","Mean_F1","Mean_Precision","Mean_Recall")]
+```
+
+#### Model comparison and selection
+
+```{r results='hide'}
+set.seed(1991)
+control <- trainControl(method = "cv", number = 10)
+# 120. Machine learning algorithms.
+mod.5 <- train(Habitat ~., data = train_data, method = "multinom", trControl = control)
+mod.6 <- train(Habitat ~., data = train_data, method = "rpart", trControl = control)
+mod.7 <- train(Habitat ~., data = train_data, method = "knn", trControl = control)
+mod.8 <- train(Habitat ~., data = train_data, method = "svmRadial", trControl = control)
+mod.9 <- train(Habitat ~., data = train_data, method = "rf", trControl = control)
+```
+
+```{r}
+# Results.
+res <- resamples(list(multino = mod.5, rpart = mod.6, knn = mod.7,svmRadial = mod.8, rd = mod.9))
+lattice::dotplot(res) # a multinomial model was clearly the best choice
+```
+
+## Fossil predictions
+
+$$\hat{P}{ij} = \frac{1}{m} \sum{k=1}^{m} \hat{P}_{ijk}$$
+
+where $\hat{P}{ij}$ is the pooled predicted probability of class $j$ for observation $i$, $\hat{P}{ijk}$ is the predicted probability of class $j$ for observation $i$ in the $k$th imputed dataset, and $m$ is the total number of imputed datasets.
+
+```{r message=FALSE}
+fossil.Pred <- vector("list",length = 11)
+
+for(i in seq_along(miss_list)) {
+  save.pred <- nnet:::predict.multinom(mod.3,newdata = miss_list[[i]],type = "prob")
+  fossil.Pred[[i]] <- save.pred
+}
+
+# Pool the predicted probabilities across all imputed datasets
+pooled_preds <- Reduce(`+`, fossil.Pred) / length(fossil.Pred)
+# Predicted class for each observation
+class_preds <- apply(pooled_preds, 1, which.max)
+
+# Predicted probabilities
+pred_df <- data.frame(predicted_class = class_preds,
+                      Aquatic = pooled_preds[, "Aquatic"], 
+                      Semiaquatic = pooled_preds[, "Semi-aquatic"], 
+                      Terrestrial = pooled_preds[, "Terrestrial"],
+                      taxon = rownames(clean.Df)[68:86])
+
+# Wide to long format
+pred_df_long <- tidyr::gather(pred_df, key = "habitat_type", value = "predicted_prob", -predicted_class,-taxon)
+
+# Probability distribution of imbalanced categories
+ggplot(pred_df_long, aes(x = "", y = predicted_prob, fill = habitat_type)) +
+  geom_bar(stat = "identity", width = 1) +
+  scale_fill_manual(values = c("#0072B2", "#E69F00", "#009E73")) +
+  coord_polar("y", start = 0) +
+  facet_wrap(~ taxon, nrow = 3)+
+  theme_void() +
+  labs(x = "%", y = NULL, fill = "Habitat Type",
+       title = "Fossil ecologies: Predicted Probabilities by Class",
+       subtitle = "Pooled predicted probabilities by class") +
+  theme(strip.text = element_text(size = 4)) +
+  geom_text(data = pred_df_long, 
+            aes(label = paste0(round(predicted_prob*100), "%")),
+            position = position_stack(vjust = 0.5), size = 3) +
+  geom_rect(data = subset(pred_df_long, taxon %in% 
+                            c("Strzeleckemys bunurongi NMV P208086a",
+                              "Strzeleckemys bunurongi NMV P208129",
+                              "Strzeleckemys bunurongi NMV P231470")),
+            fill = NA, colour = "black", xmin = -Inf,xmax = Inf,
+            ymin = -Inf,ymax = Inf)
+```
+
+### SMOTE and Random over-sampling
+
+```{r eval=TRUE,results='hide'}
+# Smote dataframe.
+train.smoote <- SmoteClassif(form = Habitat~., dat = train_data,
+                             C.perc = "balance",
+                             k = sqrt(nrow(train_data)))
+# Multinomial model.
+smote_nnet <- nnet::multinom(formula = Habitat ~., data=train.smoote)
+# Model accuracy on the hold-out set.
+pred_smoote_testing <- predict(smote_nnet,newdata = test_data,"class")
+cat("Acuuracy:",mean(pred_smoote_testing == test_data$Habitat)*100,"%") # 84.21%
+
+# Random over-sampling for imbalanced classification problems.
+train.oversampling <- RandOverClassif(Habitat~., train_data, "balance")
+# Fit models all over again.
+roc_nnet <- nnet::multinom(formula = Habitat ~., data=train.oversampling)
+# Validated.
+pred_oversampling_testing <- predict(roc_nnet,newdata = test_data,"class")
+mean(pred_oversampling_testing == test_data$Habitat)*100 # 84.21%
+```
+
+### Compare model performance
+
+```{r message=FALSE}
+# Smote & oversampling.
+performance_smote <- data.frame(obs = test_data$Habitat, pred = pred_smoote_testing)
+performance_oversampling <- data.frame(obs = test_data$Habitat,pred = pred_oversampling_testing)
+
+cmp_smote = unlist(multiClassSummary(data = performance_smote,lev = classes))
+cmp_oversampling = unlist(multiClassSummary(data = performance_oversampling,lev = classes))
+cmp_unbalanced = unlist(multiClassSummary(data = performance.Df, lev = classes))
+
+performance_index <- data.frame("Smoote" = cmp_smote,
+                                "Oversampling" = cmp_oversampling,
+                                "Unbalanced" = cmp_unbalanced) %>% 
+  t() %>%
+  as_tibble() %>% 
+  rownames_to_column(var = "Method") %>% 
+  mutate(Method = c("Smoote","Oversampling","Unbalanced")) %>%
+  as.data.frame() %>%
+  reshape::melt()
+
+performance_index$Method <- factor(performance_index$Method,
+                                     levels = c("Unbalanced","Smoote","Oversampling"))
+
+performance_index %>%
+  ggplot(aes(x=variable, y=value, fill = variable)) + 
+  geom_bar(stat = "identity",position = "dodge") +
+  facet_wrap(.~Method) +
+  theme_minimal() + theme(axis.text.x = element_text(size = 7,angle = 45,vjust = 0,hjust = 0),
+                          aspect.ratio = 2)
+```
+
+### Pooled predicted probabilities (oversampling)
+
+```{r eval=TRUE,results='hide'}
+# Pooled predicted probabilities.
+IRMI.SMOTE <- vector("list",length = 11)
+for(i in seq_along(miss_list)) {
+  save.pred <- predict(smote_nnet,newdata = miss_list[[i]],type = "prob")
+  IRMI.SMOTE[[i]] <- save.pred
+}
+
+IRMI.ROC <- vector("list",length = 11)
+for(i in seq_along(miss_list)) {
+  save.pred <- predict(roc_nnet,newdata = miss_list[[i]],type = "prob")
+  IRMI.ROC[[i]] <- save.pred
+}
+
+# Average results and compare against the prediction based on unbalanced data.
+pooled_smote <- Reduce(`+`, IRMI.SMOTE)/length(IRMI.SMOTE)
+pooled_roc <- Reduce(`+`, IRMI.ROC)/length(IRMI.ROC)
+# Predicted class.
+class_smote <- apply(pooled_smote, 1, which.max)
+class_roc <- apply(pooled_roc, 1, which.max)
+```
