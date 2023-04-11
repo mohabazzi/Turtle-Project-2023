@@ -26,20 +26,17 @@ Contact: bazzi@ug.kth.se
 
 ## Access .Rdata
 
-T
+Larger assets can be accessed from within a report using [`piggyback`](https://github.com/ropensci/piggyback)!
 
 ```{r}
+# Install and load R package
+install.packages(piggyback)
 require(piggyback)
-tempdir()
-pb_download(file = "default.RData",dest = tempdir(),repo = "KTH-Library/reports",tag = "v1.0.0")
+
+# Create temporar directory and load .Rdata into R environment,
+pb_download(file = "default.RData",dest = tempdir(),repo = "mohabazzi/Turtle-Project-2023",tag = "v1.0.0")
 load(file = file.path(tempdir(),"default.RData"))
 ```
-
-require(piggyback)
-tempdir()
-pb_download(file = "default.RData",dest = tempdir(),repo = "KTH-Library/reports",tag = "v1.0.0")
-load(file = file.path(tempdir(),"default.RData"))
-
 **Data files included:**
 
 Measurement File.csv - Extant and fossil testudinatan forelimb proportion dataset of Joyce & Gauthier.
