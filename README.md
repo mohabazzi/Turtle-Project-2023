@@ -1,7 +1,7 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# Turtle Project 2023
+# Multinomial classification of turtles
 
 <!-- badges: start -->
 <!-- badges: end -->
