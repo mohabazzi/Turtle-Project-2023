@@ -1,20 +1,7 @@
 ---
-title: "Cold-adapted Cretaceous polar turtle resolves the trans-Antarctic radiations of Testudinatas"
-author:
-  - name: Mohamad Bazzi
-    corresponding: false
-    orcid: 0000-0002-9495-0781
-    email: bazzi@kth.se
-    affiliations:
-      - name: KTH Royal Institute of Technology
-        address: Osquars backe 31
-        city: Stockholm
-        postal-code: 114 28
-  - name: Benjamin P. Kear, Márton Rabi, Martin Kundrát, Michael S. Y. Lee, Daniel Snitting,
-          Peter Trussler, Mohamad Bazzi, Barbara E. Wagstaff,
-          Dorris E. Seegets-Villiers, Thomas H. Rich, Patricia Vickers-Rich &
-          Lesley Kool
-highlight-style: pygments
+title: Supplementary Data 6
+subtitle: "Cold-adapted Cretaceous polar turtle resolves the trans-Antarctic radiations of Testudinata"
+date: 2023-04-28
 format:
   html:
     toc: true
@@ -23,9 +10,39 @@ format:
     code-fold: true
     html-math-method: katex
     embed-resources: true
-editor_options: 
-  chunk_output_type: console
 ---
+
+<div class="author-info">
+
+Benjamin P. Kear<sup>1\*</sup>, Márton Rabi<sup>2,3</sup>, Martin Kundrát<sup>4</sup>, Michael S. Y. Lee<sup>5,6</sup>, Daniel Snitting<sup>7</sup>, Peter Trusler<sup>8</sup>, Mohamad Bazzi<sup>9,10</sup>, Barbara E. Wagstaff<sup>11</sup>, Doris E. Seegets-Villiers<sup>12</sup>, Thomas H. Rich<sup>8</sup>, Patricia Vickers-Rich<sup>12,13</sup>, and Lesley Kool<sup>8,12</sup><br>
+
+<p>
+
+</p>
+
+<div class="affiliation-info">
+
+<sup>1</sup> Museum of Evolution, Uppsala University, 752 36 Uppsala, Sweden.<br> <sup>2</sup> Department of Geosciences, University of Tübingen, Hölderlinstraße 12, D-72074, Tübingen, Germany.<br> <sup>3</sup> Natural Sciences Collections (ZNS), Martin-Luther University Halle-Wittenberg, Domplatz 4, D-06108, Halle (Saale), Germany.<br> <sup>4</sup> Center for Interdisciplinary Biosciences, Technology and Innovation Park, University of Pavol Jozef Šafárik, Košice 04154, Slovakia.<br> <sup>5</sup> School of Biological Sciences, Flinders University, Adelaide 5001, Australia.<br> <sup>6</sup> South Australian Museum, North Terrace, Adelaide 5000, Australia.<br> <sup>7</sup> Department of Organismal Biology, Uppsala University, 752 36 Uppsala, Sweden.<br> <sup>8</sup> Museum Victoria, PO Box 666, Melbourne, Victoria 3001, Australia.<br> <sup>9</sup> KTH, Royal Institute of Technology, Osquars backe 31, 114 28 Stockholm, Sweden.<br> <sup>10</sup> Paleontological Institute and Museum, University of Zürich, Zürich CH‑8006, Switzerland.<br> <sup>11</sup> The School of Earth Sciences, The University of Melbourne, Victoria 3010, Australia.<br> <sup>12</sup> School of Earth, Atmosphere and Environment, Monash University, Melbourne, Victoria 3800, Australia.<br> <sup>13</sup> Faculty of Science, Engineering and Technology, Swinburne University of Technology, John St, Hawthorn, Victoria 3122, Australia.<br>
+
+```{=html}
+<style> 
+
+.author-info {
+  margin-left: 0;
+}
+
+.affiliation-info {
+  font-size: 0.8em;
+}
+
+.content {
+  margin-left: 50px;
+}
+</style>
+```
+Code compiled and curated by M.B. [Contact](mailto:mohammed_bazzi@hotmail.com)
+
+\*Correspondence and requests for materials should be addressed to B.P.K. [Contact](mailto:benjamin.kear@em.uu.se)
 
 ------------------------------------------------------------------------
 
@@ -35,7 +52,7 @@ editor_options:
 # update.packages(checkBuilt = TRUE, ask = FALSE)
 
 R.packages <- c("openxlsx","tidyverse","mice","caret","corrplot","jmv",
-                "ggfortify","GGally","MASS","MuMIn","DMwR2","tidyr",
+                "ggfortify","GGally","MASS","MuMIn","DMwR2","tidyr","qreport",
                 "nnet","gridExtra","VIM","lmtest","RColorBrewer","performance",
                 "ggstance","visdat","naniar","wesanderson","DescTools",
                 "car","qgraph","ggeffects","ggthemes","knitr","stargazer",
@@ -72,9 +89,11 @@ remove_outliers <- function(df, cols = names(df)) {
   }
 ```
 
-## Data-driven flowchart
+## Research workflow
 
 ```{r}
+#| label: Figure
+#| fig-cap: "Workflow for reproducible data and statistical analysis and reporting."
 DiagrammeR::grViz("
 digraph {
   graph [layout = dot, rankdir = TB]
