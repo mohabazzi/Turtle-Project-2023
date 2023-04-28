@@ -98,17 +98,17 @@ DiagrammeR::grViz("
 digraph {
   graph [layout = dot, rankdir = TB]
   
-  node [shape = rectangle, style = filled, fillcolor = Linen]
+  node [shape = rectangle, style = filled, fontcolor = white]
   
-  data [label = 'Extant and fossil data', shape = folder, fillcolor = Beige]
-  explore [label = 'Data exploration']
-  outlier [label = 'Outlier detection and removal']
-  impute [label = 'Estimating missing values for fossil data']
-  perf [label = 'Imputation performance and variable correlation']
-  split [label = 'Train-Test split']
-  model [label = 'Fitting multinomial logistic model']
-  validation [label = 'Model performance using cross-validation']
-  prediction [label = 'Fossil prediction']
+  data [label = 'Extant and fossil data', shape = folder, fillcolor = grey]
+  explore [label = 'Data exploration', fillcolor = '#E7298A']
+  outlier [label = 'Outlier detection and removal', fillcolor = '#E7298A']
+  impute [label = 'Estimating missing values for fossil data', fillcolor = '#E7298A']
+  perf [label = 'Imputation performance and variable correlation', fillcolor = '#E7298A']
+  split [label = 'Train-Test split', fillcolor = '#E7298A']
+  model [label = 'Fitting multinomial logistic model', fillcolor = '#E7298A']
+  validation [label = 'Model performance using cross-validation', fillcolor = '#E7298A']
+  prediction [label = 'Fossil prediction', fillcolor = '#E7298A']
   
   data -> explore
   explore -> outlier
@@ -131,20 +131,20 @@ digraph {
 # Data Input.
 Turtle.Df <- utils::read.csv2(file = "Measurement File.csv",header = T)
 # Change character class into factors.
-Turtle.Df <- Turtle.Df %>%
+Turtle.Df <- Turtle.Df |>
   dplyr::mutate_if(is.character,as.factor)
 # Sample size: check for class imbalance.
-Turtle.Df %>%
-  dplyr::count(Habitat) %>%
-  dplyr::mutate('%' = round(n/sum(n),2)) %>%
-  knitr::kable() %>% kable_styling(bootstrap_options = "striped", full_width = F)
+Turtle.Df |>
+  dplyr::count(Habitat) |>
+  dplyr::mutate('%' = round(n/sum(n),2)) |>
+  knitr::kable() |> kable_styling(bootstrap_options = "striped", full_width = F)
 ```
 
 **Missingness.** Data missingness is moderate with a total of 32 missing values out of 288 cells (11.1% missingness). Specifically, there are 6 missing values for the variable 'Humerus length', 10 missing values for 'Ulna length', and 16 missing values for 'Manual Digit III length'.
 
 ```{r message=FALSE,warning=FALSE,fig.cap="Pattern of missingness by dependendent variable (i.e. habitat)"}
 # Pattern of missingness.
-Turtle.Df[,4:7] %>%
+Turtle.Df[,4:7] |>
   naniar::gg_miss_var(facet = Habitat,show_pct = FALSE) +
   labs(x = "") +
   theme_bw()+ theme(aspect.ratio = 1/2)
@@ -171,21 +171,23 @@ formatC(unlist(lapply(Turtle.Df[,4:6],function(x) sum(is.na(x))))/
 **Little's MCAR test.** Our data is not missing completely at random (p \<\< 0.0001).
 
 ```{r}
-naniar::mcar_test(Turtle.Df[,4:6])
+naniar::mcar_test(Turtle.Df[,4:6]) |> 
+  knitr::kable() |> 
+  kable_styling(bootstrap_options = "striped")
 ```
 
 **Test of normality.** The Shapiro-Wilk test was used to assess the normality of the distribution of the predictor variables. The P-values obtained from the test were less than the chosen significance level, indicating that the null hypothesis of normality for the predictor variables could not be accepted. This was further supported by visualizing the distribution of the predictor variables using **Quantile-Quantile (Q-Q)** plots, which showed a departure from the normal distribution, specifically in the form of a right-skewed distribution for the un-transformed variables.
 
 ```{r results='hide'}
 # Is the distribution of the data normal? Limited to extant complete specimens.
-apply(X = Turtle.Df[1:77,4:6], MARGIN = 2, FUN = shapiro.test) %>%
-  lapply(function(x) data.frame(statistic = x$statistic, p.value = x$p.value)) %>%
-  bind_rows() %>% tibble::rownames_to_column(var = "Variable") %>% 
+apply(X = Turtle.Df[1:77,4:6], MARGIN = 2, FUN = shapiro.test) |>
+  lapply(function(x) data.frame(statistic = x$statistic, p.value = x$p.value)) |>
+  bind_rows() |> tibble::rownames_to_column(var = "Variable") |> 
   mutate(Variable = case_when(Variable == "W...1" ~ "Humerus.Length",
                               Variable == "W...2" ~ "Ulna.Length",
                               Variable == "W...3" ~ "Digit.III",
-                              TRUE ~ Variable)) %>% 
-  knitr::kable() %>% 
+                              TRUE ~ Variable)) |> 
+  knitr::kable() |> 
   kable_styling(bootstrap_options = "striped", full_width = F)
 ```
 
@@ -216,7 +218,7 @@ for(i in 1:ncol(Turtle.Df)) {
 ### Pair-wise correlation
 
 ```{r fig.cap="Pair-wise correlation. Coefficient statistics was computed using spearman's correlation method"}
-trait_cor <- cor(Turtle.Df %>% dplyr::select_if(is.numeric),
+trait_cor <- cor(Turtle.Df |> dplyr::select_if(is.numeric),
                  use = "complete.obs",method = "spearman")
 
 corrplot::corrplot(trait_cor, tl.cex = 1,tl.srt=0,
@@ -253,7 +255,7 @@ barplot(t.prop, las = 1, col = c(rep("white",3),rep("#b11226",1)),
 ### Heatmap
 
 ```{r fig.cap="Heatmap showing the number of specimens by habitat and family"}
-Turtle.Df %>%
+Turtle.Df |>
   ggplot(aes(x = Habitat, y = Higher.Taxon)) +
   geom_bin2d(show.legend = T) +
   scale_fill_gradientn(colours = wes_palette("Zissou1",100, type = "continuous")) +
@@ -370,9 +372,9 @@ w <- function(x){
 irmi_var <- lapply(irmi_extinct,FUN = w)
 
 # Combine dataframes.
-irmi_multiple <- irmi_var %>% bind_rows(.id = "id")
-irmi_multiple %>%
-  tidyr::pivot_longer(cols = -c(id,taxa), names_to = "variable", values_to = "value") %>%
+irmi_multiple <- irmi_var |> bind_rows(.id = "id")
+irmi_multiple |>
+  tidyr::pivot_longer(cols = -c(id,taxa), names_to = "variable", values_to = "value") |>
   ggplot(aes(x = taxa, y = value, color = variable)) +
   geom_point() +
   scale_color_manual(values = c("#00AFBB", "#E7B800", "#FC4E07")) +
@@ -435,7 +437,7 @@ for(i in seq_along(random_list)) {
 }
 
 # Correlation test (Humerus length).
-Humerus.Path <- "Imputation-Performace_Humerus.xlsx"
+Humerus.Path <- "Imputation-Performance_Humerus.xlsx"
 Humerus_list <- list()
 # Import data file
 for(i in c(1:4)) {
@@ -446,7 +448,7 @@ for(i in c(1:4)) {
 cor_humerus_list <- lapply(Humerus_list, function(x) cor(x[,"Humerus.Imputed"],
                                                          x[,"Humerus.Acctual"]))
 # Correlation test (Ulna length).
-Ulna.Path <- "Imputation-Performace_Ulna.xlsx"
+Ulna.Path <- "Imputation-Performance_Ulna.xlsx"
 Ulna_list <- list()
 
 for(i in c(1:4)) {
@@ -457,7 +459,7 @@ for(i in c(1:4)) {
 cor_ulna_list <- lapply(Ulna_list, function(x) cor(x[,"Ulna.Imputed"],
                                                    x[,"Ulna.Acctual"]))
 # Correlation test (Digit III length).
-Digit.Path <- "Imputation-Performace_Digit.xlsx"
+Digit.Path <- "Imputation-Performance_Digit.xlsx"
 Digit_list <- list()
 
 for(i in c(1:4)) {
@@ -564,7 +566,7 @@ all.Df <- comp_list[[1]] # No. 67 observations.
 # Average and standard deviation.
 knitr::kable(
   data.frame(mean = (apply(all.Df[,2:4],2,mean)),
-             sd = (apply(all.Df[,2:4],2,sd)))) %>% 
+             sd = (apply(all.Df[,2:4],2,sd)))) |> 
   kable_styling(bootstrap_options = "striped")
 
 # Final check of multicollinearity.
@@ -665,7 +667,7 @@ ggplot(melt_boxplot, mapping = aes(x = Habitat, y = value, fill = Habitat)) +
 
 ```{r results='hide'}
 # Near zero-variance? No.
-nearZeroVar(all.Df[2:4], saveMetrics = T) %>% smoothScatter()
+nearZeroVar(all.Df[2:4], saveMetrics = T) |> smoothScatter()
 nearZeroVar(all.Df[c(2,4)], saveMetrics = T)
 
 # Drop Ulna from the dataframe.
@@ -704,8 +706,8 @@ where:
 #### Estimated probability distribution
 
 ```{r}
-phi <- rbind(Aquatic = 0, coef(mod.intercept)) %>%
-  as_tibble(rownames = 'id') %>%
+phi <- rbind(Aquatic = 0, coef(mod.intercept)) |>
+  as_tibble(rownames = 'id') |>
   deframe()
 
 scales::percent(exp(phi)/sum(exp(phi)),accuracy = 0.01)
@@ -719,11 +721,11 @@ $$
 # Full multinomial model
 # Does the inclusion of predictor variables improve the model fit? Yes.
 # By default, coefficients are interpreted as relative log-odds.
-summary(mod.3 <- multinom(Habitat ~., data = train_data,Hess = T,model = T)) %>% 
+summary(mod.3 <- multinom(Habitat ~., data = train_data,Hess = T,model = T)) |> 
   magrittr::extract('coefficients')
 
 ## Exponentiating the slope coefficients gives odds ratios (i.e., relative risks), relative to the baseline category.
-data.frame(t(exp(summary(mod.3)$coefficients))) %>% 
+data.frame(t(exp(summary(mod.3)$coefficients))) |> 
   round(digits = 3)
 
 ## Relative risks
@@ -797,7 +799,9 @@ good.fit <- mod.intercept$deviance - mod.3$deviance
 pchisq(q = good.fit,df = mod.3$edf, lower.tail=FALSE)
 # Likelihood ratio chi-square:
 anova(mod.3,mod.intercept,test = "Chisq")$LR[2]
-lrtest(mod.3,mod.intercept)
+lrtest(mod.3,mod.intercept) |> 
+  knitr::kable() |> 
+  kable_styling(bootstrap_options = "striped")
 
 #     Goodness of fit.
 #     Observed vs. expected
@@ -805,7 +809,13 @@ ch.q <- chisq.test(x = train_data$Habitat,predict(mod.3),simulate.p.value = T)
 #     Hosmer and Lemeshow test (multinomial model)
 #     Pearson’s chi-squared statistic, Degrees of freedom, and significance.
 #     Null hypothesis is retained.
-logitgof(train_data$Habitat, fitted(mod.3))
+hosmer_lew <- suppressWarnings(logitgof(train_data$Habitat, fitted(mod.3)))
+#     Table
+data.frame(statistics = hosmer_lew$statistic,
+           df = hosmer_lew$parameter,
+           p = hosmer_lew$p.value) |> 
+  knitr::kable(caption = "Hosmer and Lemeshow test (multinomial model)") |> 
+  kable_styling(bootstrap_options = "striped")
 ```
 
 #### Pseudo R-Squares
@@ -815,13 +825,13 @@ logitgof(train_data$Habitat, fitted(mod.3))
 DescTools::PseudoR2(x = mod.3, which = c("CoxSnell","Nagelkerke","McFadden"))
 # Likelihood Ratio Tests: the LRT is the Chisq statistic.
 LRT <- MASS::dropterm(mod.3, trace=FALSE, test="Chisq")
-LRT %>% print()
+LRT |> print()
 
 # Influential variables.
 var.imp <- varImp(mod.3)
 var.imp$var <- rownames(var.imp)
 
-var.imp %>% ggplot(aes(x=var, y=Overall)) +
+var.imp |> ggplot(aes(x=var, y=Overall)) +
   geom_segment(aes(x=var, xend=var, y=0, yend=Overall), color="grey") +
   geom_point(color="black", size=4) + ylab("Influential variables") + xlab("")+
   theme_light()
@@ -832,7 +842,7 @@ var.imp %>% ggplot(aes(x=var, y=Overall)) +
 ```{r}
 mod.4 <- nnet::multinom(Habitat ~ Digit.III,
                         data = train_data,
-                        Hess = T,model = T) %>% suppressMessages()
+                        Hess = T,model = T) |> suppressMessages()
 
 kable(stats::anova(mod.3, mod.4, test = "Chisq"), format = "markdown")
 ```
@@ -967,18 +977,18 @@ cmp_unbalanced = unlist(multiClassSummary(data = performance.Df, lev = classes))
 
 performance_index <- data.frame("Smoote" = cmp_smote,
                                 "Oversampling" = cmp_oversampling,
-                                "Unbalanced" = cmp_unbalanced) %>% 
-  t() %>%
-  as_tibble() %>% 
-  rownames_to_column(var = "Method") %>% 
-  mutate(Method = c("Smoote","Oversampling","Unbalanced")) %>%
-  as.data.frame() %>%
+                                "Unbalanced" = cmp_unbalanced) |> 
+  t() |>
+  as_tibble() |> 
+  rownames_to_column(var = "Method") |> 
+  mutate(Method = c("Smoote","Oversampling","Unbalanced")) |>
+  as.data.frame() |>
   reshape::melt()
 
 performance_index$Method <- factor(performance_index$Method,
                                      levels = c("Unbalanced","Smoote","Oversampling"))
 
-performance_index %>%
+performance_index |>
   ggplot(aes(x=variable, y=value, fill = variable)) + 
   geom_bar(stat = "identity",position = "dodge") +
   facet_wrap(.~Method) +
