@@ -15,7 +15,9 @@ Daniel Snitting, Peter Trussler, Mohamad Bazzi, Barbara E. Wagstaff,
 Dorris E. Seegets-Villiers, Thomas H. Rich, Patricia Vickers-Rich &
 Lesley Kool
 
-Code written and maintained by Mohamad Bazzi Contact: <bazzi@ug.kth.se>
+Code written and maintained by Mohamad Bazzi 
+
+Contact: <bazzi@ug.kth.se>
 
 ## Load the .RData file
 
@@ -23,7 +25,7 @@ Access the study's .Rdata object, containing all data and results, using:
 [`piggyback`](https://github.com/ropensci/piggyback)!
 
 ``` r
-__This R code shows how to access a .Rdata file from a GitHub release using the piggyback package.__
+This R code shows how to access a .Rdata file from a GitHub release using the piggyback package.
 
 1. First install and load the piggyback package.
 2. Create a temporary directory and download the default.RData file from the specified GitHub repository release version using the pb_download() function.
