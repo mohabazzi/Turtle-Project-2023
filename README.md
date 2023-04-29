@@ -17,17 +17,22 @@ Lesley Kool
 
 Code written and maintained by Mohamad Bazzi Contact: <bazzi@ug.kth.se>
 
-## Access .Rdata
+## Load the .RData file
 
-Larger assets can be accessed from within a report using
+Access the study's .Rdata object, containing all data and results, using:
 [`piggyback`](https://github.com/ropensci/piggyback)!
 
 ``` r
-# Install and load R package
+__This R code shows how to access a .Rdata file from a GitHub release using the piggyback package.__
+
+1. First install and load the piggyback package.
+2. Create a temporary directory and download the default.RData file from the specified GitHub repository release version using the pb_download() function.
+3. Finally, load the downloaded .Rdata file into the R environment using the load() function.
+
 # install.packages(piggyback)
 # require(piggyback)
 
-# Create temporar directory and load .Rdata into R environment,
+# Create temporar directory and load .Rdata into R environment.
 # pb_download(file = "default.RData",dest = tempdir(),repo = "mohabazzi/Turtle-Project-2023",tag = "v1.0.0")
 # load(file = file.path(tempdir(),"default.RData"))
 ```
@@ -35,4 +40,4 @@ Larger assets can be accessed from within a report using
 **Data files included:**
 
 Measurement File.csv - Extant and fossil testudinatan forelimb
-proportion dataset of Joyce & Gauthier.
+proportion dataset of Joyce & Gauthier 2004.
