@@ -1,7 +1,6 @@
 ---
 title: Supplementary Data 6
 subtitle: "Cold-adapted Cretaceous polar turtle resolves the trans-Antarctic radiations of Testudinata"
-date: 2023-04-28
 format:
   html:
     toc: true
@@ -129,7 +128,7 @@ digraph {
 
 ```{r}
 # Data Input.
-Turtle.Df <- openxlsx::read.xlsx(xlsxFile = "Measurement File.xlsx")
+Turtle.Df <- openxlsx::read.xlsx(xlsxFile = "data/Measurement File.xlsx")
 # Change character class into factors.
 Turtle.Df <- Turtle.Df |>
   dplyr::mutate_if(is.character,as.factor)
@@ -437,7 +436,7 @@ for(i in seq_along(random_list)) {
 }
 
 # Correlation test (Humerus length).
-Humerus.Path <- "Imputation-Performance_Humerus.xlsx"
+Humerus.Path <- "data-raw/imputation_performance_humerus.xlsx"
 Humerus_list <- list()
 # Import data file
 for(i in c(1:4)) {
@@ -448,7 +447,7 @@ for(i in c(1:4)) {
 cor_humerus_list <- lapply(Humerus_list, function(x) cor(x[,"Humerus.Imputed"],
                                                          x[,"Humerus.Acctual"]))
 # Correlation test (Ulna length).
-Ulna.Path <- "Imputation-Performance_Ulna.xlsx"
+Ulna.Path <- "data-raw/imputation_performance_ulna.xlsx"
 Ulna_list <- list()
 
 for(i in c(1:4)) {
@@ -459,7 +458,7 @@ for(i in c(1:4)) {
 cor_ulna_list <- lapply(Ulna_list, function(x) cor(x[,"Ulna.Imputed"],
                                                    x[,"Ulna.Acctual"]))
 # Correlation test (Digit III length).
-Digit.Path <- "Imputation-Performance_Digit.xlsx"
+Digit.Path <- "data-raw/imputation_performance_digit.xlsx"
 Digit_list <- list()
 
 for(i in c(1:4)) {
