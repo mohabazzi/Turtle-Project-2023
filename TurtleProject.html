@@ -6,7 +6,6 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2023-04-28">
 
 <title>Supplementary Data 6</title>
 <style>
@@ -4521,12 +4520,6 @@ border: 0;
 <div class="quarto-title-meta">
 
     
-    <div>
-    <div class="quarto-title-meta-heading">Published</div>
-    <div class="quarto-title-meta-contents">
-      <p class="date">April 28, 2023</p>
-    </div>
-  </div>
   
     
   </div>
@@ -4638,8 +4631,8 @@ margin-left: 50px;
 <span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a><span class="st">&quot;</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
-<div class="grViz html-widget html-fill-item-overflow-hidden html-fill-item" id="htmlwidget-480373f22cddc4347549" style="width:100%;height:464px;"></div>
-<script type="application/json" data-for="htmlwidget-480373f22cddc4347549">{"x":{"diagram":"\ndigraph {\n  graph [layout = dot, rankdir = TB]\n  \n  node [shape = rectangle, style = filled, fontcolor = white]\n  \n  data [label = \"Extant and fossil data\", shape = folder, fillcolor = grey]\n  explore [label = \"Data exploration\", fillcolor = \"#E7298A\"]\n  outlier [label = \"Outlier detection and removal\", fillcolor = \"#E7298A\"]\n  impute [label = \"Estimating missing values for fossil data\", fillcolor = \"#E7298A\"]\n  perf [label = \"Imputation performance and variable correlation\", fillcolor = \"#E7298A\"]\n  split [label = \"Train-Test split\", fillcolor = \"#E7298A\"]\n  model [label = \"Fitting multinomial logistic model\", fillcolor = \"#E7298A\"]\n  validation [label = \"Model performance using cross-validation\", fillcolor = \"#E7298A\"]\n  prediction [label = \"Fossil prediction\", fillcolor = \"#E7298A\"]\n  \n  data -> explore\n  explore -> outlier\n  outlier -> impute\n  impute -> perf\n  split -> model\n  outlier -> split [style = dashed]\n  model -> validation\n  impute -> prediction\n  model -> prediction [style = dashed]\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<div class="grViz html-widget html-fill-item-overflow-hidden html-fill-item" id="htmlwidget-03031410a0b3dbd9237e" style="width:100%;height:464px;"></div>
+<script type="application/json" data-for="htmlwidget-03031410a0b3dbd9237e">{"x":{"diagram":"\ndigraph {\n  graph [layout = dot, rankdir = TB]\n  \n  node [shape = rectangle, style = filled, fontcolor = white]\n  \n  data [label = \"Extant and fossil data\", shape = folder, fillcolor = grey]\n  explore [label = \"Data exploration\", fillcolor = \"#E7298A\"]\n  outlier [label = \"Outlier detection and removal\", fillcolor = \"#E7298A\"]\n  impute [label = \"Estimating missing values for fossil data\", fillcolor = \"#E7298A\"]\n  perf [label = \"Imputation performance and variable correlation\", fillcolor = \"#E7298A\"]\n  split [label = \"Train-Test split\", fillcolor = \"#E7298A\"]\n  model [label = \"Fitting multinomial logistic model\", fillcolor = \"#E7298A\"]\n  validation [label = \"Model performance using cross-validation\", fillcolor = \"#E7298A\"]\n  prediction [label = \"Fossil prediction\", fillcolor = \"#E7298A\"]\n  \n  data -> explore\n  explore -> outlier\n  outlier -> impute\n  impute -> perf\n  split -> model\n  outlier -> split [style = dashed]\n  model -> validation\n  impute -> prediction\n  model -> prediction [style = dashed]\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 <p>Workflow for reproducible data and statistical analysis and reporting.</p>
 </div>
 </div>
