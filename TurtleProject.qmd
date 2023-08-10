@@ -9,6 +9,8 @@ format:
     code-fold: true
     html-math-method: katex
     embed-resources: true
+editor_options: 
+  chunk_output_type: console
 ---
 
 <div class="author-info">
@@ -93,33 +95,7 @@ remove_outliers <- function(df, cols = names(df)) {
 ```{r}
 #| label: Figure
 #| fig-cap: "Workflow for reproducible data and statistical analysis and reporting."
-DiagrammeR::grViz("
-digraph {
-  graph [layout = dot, rankdir = TB]
-  
-  node [shape = rectangle, style = filled, fontcolor = white]
-  
-  data [label = 'Extant and fossil data', shape = folder, fillcolor = grey]
-  explore [label = 'Data exploration', fillcolor = '#E7298A']
-  outlier [label = 'Outlier detection and removal', fillcolor = '#E7298A']
-  impute [label = 'Estimating missing values for fossil data', fillcolor = '#E7298A']
-  perf [label = 'Imputation performance and variable correlation', fillcolor = '#E7298A']
-  split [label = 'Train-Test split', fillcolor = '#E7298A']
-  model [label = 'Fitting multinomial logistic model', fillcolor = '#E7298A']
-  validation [label = 'Model performance using cross-validation', fillcolor = '#E7298A']
-  prediction [label = 'Fossil prediction', fillcolor = '#E7298A']
-  
-  data -> explore
-  explore -> outlier
-  outlier -> impute
-  impute -> perf
-  split -> model
-  outlier -> split [style = dashed]
-  model -> validation
-  impute -> prediction
-  model -> prediction [style = dashed]
-}
-")
+DiagrammeR::grViz("workflow.gv")
 ```
 
 ## Exploratory Data Analysis
