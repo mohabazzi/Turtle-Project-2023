@@ -1,5 +1,18 @@
 FROM rocker/r-ubuntu
 
+# FROM rocker/r-ver:latest
+
+# Copy the .qmd file into the image
+COPY TurtleProject.qmd /app/TurtleProject.qmd
+
+# Copy the main morphometric data file
+COPY data/measurement_file.xlsx /app/data/measurement_file.xlsx
+
+# Copy ancillary data .xlsx files. 
+COPY data-raw/imputation_performance_humerus.xlsx /app/data-raw/imputation_performance_humerus.xlsx
+COPY data-raw/imputation_performance_ulna.xlsx /app/data-raw/imputation_performance_ulna.xlsx
+COPY data-raw/imputation_performance_digit.xlsx /app/data-raw/imputation_performance_digit.xlsx
+
 # install quarto CLI
 RUN apt-get update -y && apt-get install -y \
 	wget
@@ -10,6 +23,7 @@ RUN wget https://github.com/quarto-dev/quarto-cli/releases/download/v1.3.450/qua
 
 # install r-cran-* binary packages
 RUN apt-get install -y --no-install-recommends \
+	r-cran-tidyverse \
 	r-cran-mass \
 	r-cran-vim \
 	r-cran-desctools \
@@ -18,7 +32,6 @@ RUN apt-get install -y --no-install-recommends \
 	r-cran-mice \
 	r-cran-caret \
 	r-cran-corrplot \
-	r-cran-jmvcore \
 	r-cran-ggfortify \
 	r-cran-ggally \
 	r-cran-mumin \
@@ -47,14 +60,28 @@ RUN apt-get install -y --no-install-recommends \
 # install R packages from source
 RUN R -e "install.packages(c(\
 	'quarto', \
+	'see', \
+	'kernlab', \
 	'DMwR2', \
+	'remotes', \
 	'qreport', \
 	'wesanderson', \
-	'generalhoslem', \
-	'UBL' \
-))"
+	'randomForest', \
+	'generalhoslem'))"
 
-CMD bash
+# Install UBL R package (0.0.7)
+RUN echo "Installing UBL package..." && \
+    R -e "install.packages('UBL', version='0.0.7', dependencies=FALSE, repos='https://cran.r-project.org/')" && \
+    echo "UBL package installed successfully"
+
+# Change the CMD to render the .qmd file using quarto
+CMD R -e "quarto::quarto_render('/app/TurtleProject.qmd')"
+
+CMD /bin/bash
+
+
+
+
 
 
 

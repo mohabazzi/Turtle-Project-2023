@@ -52,13 +52,13 @@ Code compiled and curated by M.B. [Contact](mailto:mohammed_bazzi@hotmail.com)
 ```{r message=FALSE,warning=FALSE, results='hide'}
 # update.packages(checkBuilt = TRUE, ask = FALSE)
 
-R.packages <- c("openxlsx","tidyverse","mice","caret","corrplot","jmv",
-                "ggfortify","GGally","MASS","MuMIn","DMwR2","tidyr","qreport",
+R.packages <- c("openxlsx","tidyverse","mice","caret","corrplot","see","smotefamily",
+                "ggfortify","GGally","MASS","MuMIn","DMwR2","tidyr","kernlab",
                 "nnet","gridExtra","VIM","lmtest","RColorBrewer","performance",
-                "ggstance","visdat","naniar","wesanderson","DescTools",
+                "ggstance","visdat","naniar","wesanderson","DescTools","remotes",
                 "car","qgraph","ggeffects","ggthemes","knitr","stargazer",
-                "kableExtra","marginaleffects","generalhoslem","purrr",
-                "magrittr","UBL","checkpoint","data.table","DiagrammeR")
+                "kableExtra","marginaleffects","generalhoslem","purrr","piggyback",
+                "magrittr","checkpoint","data.table","DiagrammeR")
 
 invisible(lapply(R.packages,library,character.only = TRUE))
 
@@ -87,7 +87,7 @@ remove_outliers <- function(df, cols = names(df)) {
   outliers_count <- rowSums(sapply(df[,cols],outliers))
   
   df[outliers_count == 0,]
-  }
+}
 ```
 
 ## Research workflow
@@ -104,7 +104,7 @@ DiagrammeR::grViz("workflow.gv")
 
 ```{r}
 # Data Input.
-Turtle.Df <- openxlsx::read.xlsx(xlsxFile = "data/Measurement File.xlsx")
+Turtle.Df <- openxlsx::read.xlsx(xlsxFile = "data/measurement_file.xlsx")
 # Change character class into factors.
 Turtle.Df <- Turtle.Df |>
   dplyr::mutate_if(is.character,as.factor)
@@ -209,10 +209,10 @@ corrplot::corrplot(trait_cor, tl.cex = 1,tl.srt=0,
 ### Descriptive statistics
 
 ```{r}
-jmv.tab <- jmv::descriptives(data = Turtle.Df,
-                             vars = vars(Humerus.Length,Ulna.Length,Digit.III),
-                             splitBy = Habitat,freq = TRUE,missing = T,se = T)
-print(jmv.tab)
+# jmv.tab <- jmv::descriptives(data = Turtle.Df,
+#                             vars = vars(Humerus.Length,Ulna.Length,Digit.III),
+#                             splitBy = Habitat,freq = TRUE,missing = T,se = T)
+#print(jmv.tab)
 ```
 
 ### Check and visualization of data balance
@@ -920,6 +920,9 @@ ggplot(pred_df_long, aes(x = "", y = predicted_prob, fill = habitat_type)) +
 ### SMOTE and Random over-sampling
 
 ```{r eval=TRUE,results='hide'}
+# Change to this package.
+# smotefamily::SMOTE(X = Turtle.Df[,1:3],target = as.factor(Turtle.Df$Habitat),K = 5)
+
 # Smote dataframe.
 train.smoote <- SmoteClassif(form = Habitat~., dat = train_data,
                              C.perc = "balance",
