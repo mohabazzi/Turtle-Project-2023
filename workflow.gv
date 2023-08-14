@@ -1,5 +1,5 @@
 digraph {
-    graph [layout = dot,rankdir = TB,bgcolor = "#F5F5F5",fontname = "Arial",fontsize = 12,splines = true]
+    graph [layout = dot,rankdir = TB,bgcolor = "white",fontname = "Arial",fontsize = 12,splines = true]
     
     node [shape=box, style="rounded,filled", fontname="Arial", fontsize=11, penwidth=1, margin=0.1]
     edge [fontname="Arial", fontsize=10, color="#444444"]
@@ -18,7 +18,7 @@ digraph {
       explore [label = "Data Exploration", fillcolor = "#A5C3D1"];
       outlier [label = "Outlier Detection\nand Removal\n(Extant Partition)", fillcolor = "#A5C3D1"];
       impute [label = "Missing Value\nImputation\n(Fossil Partition)", fillcolor = "#A5C3D1"];
-      perf [label = "Imputation Performance\\nand Correlation", fillcolor = "#A5C3D1"];
+      perf [label = "Imputation Performance\nand Correlation", fillcolor = "#A5C3D1"];
       final_extant_dataset [label = "Final Extant Dataset", fillcolor = "#F4B084"];
       final_fossil_dataset [label = "Final Fossil Dataset", fillcolor = "#F4B084"];
   
@@ -40,7 +40,7 @@ digraph {
       fontname = "Arial";
       
       x_dataset [label = "Final Extant Dataset", fillcolor = "#F4B084"]
-      split [label = "Train-Test Split\n(Final Extant Dataset)", fillcolor = "#90C3D4"]
+      split [label = "Train-Test Split", fillcolor = "#90C3D4"]
       model [label = "Multinomial Logistic\nModeling", fillcolor = "#90C3D4"]
       y_dataset [label = "Final Fossil Dataset", fillcolor = "#F4B084"]
       oversampling [label = "Sensitivity Analysis\nSMOTE Oversampling", fillcolor = "#90C3D4"]
@@ -58,7 +58,7 @@ digraph {
       fontcolor = "#444444";
       fontname = "Arial";
       
-      prediction [label = "Fossil Predictions\n(Final Fossil Dataset)", fillcolor = "#7CBF7E"]
+      prediction [label = "Fossil Predictions", fillcolor = "#7CBF7E"]
     
     }
 
