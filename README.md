@@ -1,7 +1,7 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# Multinomial classification of turtles
+# Machine Learning Classification of Turtle Habitats
 
 <!-- badges: start -->
 <!-- badges: end -->
@@ -15,28 +15,28 @@ Daniel Snitting, Peter Trussler, Mohamad Bazzi, Barbara E. Wagstaff,
 Dorris E. Seegets-Villiers, Thomas H. Rich, Patricia Vickers-Rich &
 Lesley Kool
 
-Code written and maintained by Mohamad Bazzi 
+Code written and maintained by Mohamad Bazzi
 
 Contact: <mohammed_bazzi@hotmail.com>
 
 ## Load the .RData file
 
-Access the study's .Rdata object, containing all data and results, using:
-[`piggyback`](https://github.com/ropensci/piggyback)!
+Access the study’s .Rdata object, containing all data and results,
+using: [`piggyback`](https://github.com/ropensci/piggyback)!
 
 ``` r
-This R code shows how to access a .Rdata file from a GitHub release using the piggyback package.
+# This R code shows how to access a .Rdata file from a GitHub release using the piggyback package.
 
-1. First install and load the piggyback package.
-2. Create a temporary directory and download the default.RData file from the specified GitHub repository release version using the pb_download() function.
-3. Finally, load the downloaded .Rdata file into the R environment using the load() function.
+# 1. First install and load the piggyback package.
+# 2. Create a temporary directory and download the default.RData file from the specified GitHub repository release version using the pb_download() function.
+# 3. Finally, load the downloaded .Rdata file into the R environment using the load() function.
 
-install.packages(piggyback)
-require(piggyback)
+# install.packages(piggyback)
+# require(piggyback)
 
-# Create temporar directory and load .Rdata into R environment.
-pb_download(file = "default.RData",dest = tempdir(),repo = "mohabazzi/Turtle-Project-2023",tag = "v1.0.0")
-load(file = file.path(tempdir(),"default.RData"))
+# Create temporary directory and load .Rdata into R environment.
+# pb_download(file = "default.RData",dest = tempdir(),repo = "mohabazzi/Turtle-Project-2023",tag = "v1.0.0")
+# load(file = file.path(tempdir(),"default.RData"))
 ```
 
 No token authentication is required.
