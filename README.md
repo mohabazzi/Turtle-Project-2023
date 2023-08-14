@@ -37,9 +37,11 @@ This R code shows how to access a .Rdata file from a GitHub release using the pi
 # Create temporar directory and load .Rdata into R environment.
 # pb_download(file = "default.RData",dest = tempdir(),repo = "mohabazzi/Turtle-Project-2023",tag = "v1.0.0")
 # load(file = file.path(tempdir(),"default.RData"))
+
+No token authentication is required.
 ```
 
 **Data files included:**
 
-Measurement File.csv - Extant and fossil testudinatan forelimb
+Measurement File.xlsx - Extant and fossil testudinatan forelimb
 proportion dataset of Joyce & Gauthier 2004.
