@@ -17,7 +17,7 @@ Lesley Kool
 
 Code written and maintained by Mohamad Bazzi 
 
-Contact: <bazzi@ug.kth.se>
+Contact: <mohammed_bazzi@hotmail.com>
 
 ## Load the .RData file
 
@@ -31,15 +31,15 @@ This R code shows how to access a .Rdata file from a GitHub release using the pi
 2. Create a temporary directory and download the default.RData file from the specified GitHub repository release version using the pb_download() function.
 3. Finally, load the downloaded .Rdata file into the R environment using the load() function.
 
-# install.packages(piggyback)
-# require(piggyback)
+install.packages(piggyback)
+require(piggyback)
 
 # Create temporar directory and load .Rdata into R environment.
-# pb_download(file = "default.RData",dest = tempdir(),repo = "mohabazzi/Turtle-Project-2023",tag = "v1.0.0")
-# load(file = file.path(tempdir(),"default.RData"))
+pb_download(file = "default.RData",dest = tempdir(),repo = "mohabazzi/Turtle-Project-2023",tag = "v1.0.0")
+load(file = file.path(tempdir(),"default.RData"))
+```
 
 No token authentication is required.
-```
 
 **Data files included:**
 

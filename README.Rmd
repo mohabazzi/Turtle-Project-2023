@@ -11,7 +11,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-# Multinomial classification of turtles
+# Machine Learning Classification of Turtle Habitats
 
 <!-- badges: start -->
 <!-- badges: end -->
@@ -23,7 +23,7 @@ Peter Trussler, Mohamad Bazzi, Barbara E. Wagstaff, Dorris E. Seegets-Villiers, 
 
 Code written and maintained by Mohamad Bazzi
 
-Contact: bazzi@ug.kth.se
+Contact: mohammed_bazzi@hotmail.com
 
 ## Load the .RData file
 
@@ -43,6 +43,9 @@ This R code shows how to access a .Rdata file from a GitHub release using the pi
 # pb_download(file = "default.RData",dest = tempdir(),repo = "mohabazzi/Turtle-Project-2023",tag = "v1.0.0")
 # load(file = file.path(tempdir(),"default.RData"))
 ```
+
+No token authentication is required.
+
 **Data files included:**
 
-Measurement File.csv - Extant and fossil testudinatan forelimb proportion dataset of Joyce & Gauthier 2004.
+Measurement File.xlsx - Extant and fossil testudinatan forelimb proportion dataset of Joyce & Gauthier 2004.
