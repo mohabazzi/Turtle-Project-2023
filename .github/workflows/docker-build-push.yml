@@ -22,4 +22,6 @@ jobs:
       - name: Build and push Docker image
         run: |
           docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/turtle-image:${{ github.sha }} .
+          docker tag ${{ secrets.DOCKERHUB_USERNAME }}/turtle-image:${{ github.sha }} ${{ secrets.DOCKERHUB_USERNAME }}/turtle-image:latest
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/turtle-image:${{ github.sha }}
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/turtle-image:latest
