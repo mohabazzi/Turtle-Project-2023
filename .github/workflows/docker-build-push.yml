@@ -3,7 +3,7 @@ name: Docker image of Quarto script
 on:
   push:
     branches:
-      - main  # Change this to the branch you want to trigger the workflow on
+      - main
 
 jobs:
   build-and-push:

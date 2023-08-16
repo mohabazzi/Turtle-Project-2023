@@ -969,14 +969,12 @@ performance_index$Method <- factor(performance_index$Method,
 performance_index |> View()
 performance_index |>
   ggplot(aes(x = variable, y = value, fill = Method)) + 
-  geom_bar(stat = "identity") +
+  geom_bar(stat = "identity", position = "dodge") +
   labs(y = "Value", x = NULL,title = "Performance estimates",
        subtitle = "Comparison of smote and unbalanced habitat data") +
-  geom_text(aes(x = variable, y = value,label = round(value,digits = 2)),
-            position = position_stack(vjust=0.5),size = 1.5) +
   theme_minimal() + 
   theme(axis.text.x = element_text(size = 7,angle = 45,vjust = 1,hjust = 1),
-        aspect.ratio = 2,
+        aspect.ratio = 1,
         axis.title = element_text(face = "bold"),
         legend.title = element_text(face = "bold"),
         plot.title = element_text(face = "bold"))
