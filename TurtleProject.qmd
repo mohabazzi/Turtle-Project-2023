@@ -15,7 +15,7 @@ editor_options:
 
 <div class="author-info">
 
-Benjamin P. Kear<sup>1\*</sup>, Márton Rabi<sup>2,3</sup>, Martin Kundrát<sup>4</sup>, Michael S. Y. Lee<sup>5,6</sup>, Daniel Snitting<sup>7</sup>, Peter Trusler<sup>8</sup>, Mohamad Bazzi<sup>9,10</sup>, Barbara E. Wagstaff<sup>11</sup>, Doris E. Seegets-Villiers<sup>12</sup>, Thomas H. Rich<sup>8</sup>, Patricia Vickers-Rich<sup>12</sup>, and Lesley Kool<sup>8,12</sup><br>
+Benjamin P. Kear<sup>1\*</sup>, Márton Rabi<sup>2,3</sup>, Martin Kundrát<sup>4</sup>, Michael S. Y. Lee<sup>5,6</sup>, Daniel Snitting<sup>7</sup>, Mohamad Bazzi<sup>8,9</sup>,Barbara E. Wagstaff<sup>10</sup>, Doris E. Seegets-Villiers<sup>11</sup>, Peter Trusler<sup>12</sup>, Thomas H. Rich<sup>12</sup>, Patricia Vickers-Rich<sup>11</sup>, & Lesley Kool<sup>11,12</sup><br>
 
 <p>
 
@@ -23,7 +23,7 @@ Benjamin P. Kear<sup>1\*</sup>, Márton Rabi<sup>2,3</sup>, Martin Kundrát<sup>
 
 <div class="affiliation-info">
 
-<sup>1</sup> Museum of Evolution, Uppsala University, 752 36 Uppsala, Sweden.<br> <sup>2</sup> Department of Geosciences, University of Tübingen, Hölderlinstraße 12, D-72074, Tübingen, Germany.<br> <sup>3</sup> Natural Sciences Collections (ZNS), Martin-Luther University Halle-Wittenberg, Domplatz 4, D-06108, Halle (Saale), Germany.<br> <sup>4</sup> Center for Interdisciplinary Biosciences, Technology and Innovation Park, University of Pavol Jozef Šafárik, Košice 04154, Slovakia.<br> <sup>5</sup> School of Biological Sciences, Flinders University, Adelaide 5001, Australia.<br> <sup>6</sup> South Australian Museum, North Terrace, Adelaide 5000, Australia.<br> <sup>7</sup> Department of Organismal Biology, Uppsala University, 752 36 Uppsala, Sweden.<br> <sup>8</sup> Museum Victoria, PO Box 666, Melbourne, Victoria 3001, Australia.<br> <sup>9</sup> KTH, Royal Institute of Technology, Osquars backe 31, 114 28 Stockholm, Sweden.<br> <sup>10</sup> Paleontological Institute and Museum, University of Zürich, Zürich CH‑8006, Switzerland.<br> <sup>11</sup> The School of Earth Sciences, The University of Melbourne, Victoria 3010, Australia.<br> <sup>12</sup> School of Earth, Atmosphere and Environment, Monash University, Melbourne, Victoria 3800, Australia.<br>
+<sup>1</sup> The Museum of Evolution, Uppsala University, 752 36 Uppsala, Sweden.<br> <sup>2</sup> Department of Geosciences, University of Tübingen, Hölderlinstraße 12, D-72074, Tübingen, Germany.<br> <sup>3</sup> Natural Sciences Collections (ZNS), Martin-Luther University Halle-Wittenberg, Domplatz 4, D-06108, Halle (Saale), Germany.<br> <sup>4</sup> Center for Interdisciplinary Biosciences, Technology and Innovation Park, University of Pavol Jozef Šafárik, Košice 04154, Slovakia.<br> <sup>5</sup> School of Biological Sciences, Flinders University, Adelaide 5001, Australia. <br> <sup>6</sup> South Australian Museum, North Terrace, Adelaide 5000, Australia. <br> <sup>7</sup> Department of Organismal Biology, Uppsala University, 752 36 Uppsala, Sweden. <br> <sup>8</sup> KTH, Royal Institute of Technology, Osquars backe 31, 114 28 Stockholm, Sweden. <br> <sup>9</sup> Paleontological Institute and Museum, University of Zürich, Zürich CH‑8006, Switzerland. <br> <sup>10</sup> School of Earth Sciences, University of Melbourne, Victoria 3010, Australia. <br> <sup>11</sup> School of Earth, Atmosphere and Environment, Monash University, Melbourne, Victoria 3800, Australia. <br> <sup>12</sup> Museums Victoria, PO Box 666, Melbourne, Victoria 3001, Australia.<br>
 
 ```{=html}
 <style> 
@@ -52,15 +52,21 @@ Code compiled and curated by M.B. [Contact](mailto:mohammed_bazzi@hotmail.com)
 ```{r message=FALSE,warning=FALSE, results='hide'}
 # update.packages(checkBuilt = TRUE, ask = FALSE)
 
-R.packages <- c("openxlsx","tidyverse","mice","caret","corrplot","see","smotefamily",
-                "ggfortify","GGally","MASS","MuMIn","DMwR2","tidyr","kernlab",
-                "nnet","gridExtra","VIM","lmtest","RColorBrewer","performance",
-                "ggstance","visdat","naniar","wesanderson","DescTools","remotes",
-                "car","qgraph","ggeffects","ggthemes","knitr","stargazer",
-                "kableExtra","marginaleffects","generalhoslem","purrr","piggyback",
-                "magrittr","checkpoint","data.table","DiagrammeR","modelsummary")
+R.packages <- c("openxlsx tidyverse mice caret corrplot see smotefamily
+                ggfortify GGally MASS MuMIn DMwR2 tidyr kernlab randomForest
+                nnet gridExtra VIM lmtest RColorBrewer performance
+                ggstance visdat naniar wesanderson DescTools remotes
+                car qgraph ggeffects ggthemes knitr stargazer
+                kableExtra marginaleffects generalhoslem purrr piggyback
+                magrittr checkpoint data.table DiagrammeR modelsummary")
 
-invisible(lapply(R.packages,library,character.only = TRUE)) |> suppressMessages()
+import <- function(x)
+ x |> trimws() |> strsplit("\\s+") |> unlist() |>
+ lapply(function(x) library(x, character.only = TRUE)) |>
+ invisible() |>
+ suppressMessages()
+
+R.packages |> import()
 
 # checkpoint::checkpoint("2022-12-27")
 ```
@@ -966,7 +972,7 @@ performance_index <- data.frame("Smoote" = cmp_smote,
 
 performance_index$Method <- factor(performance_index$Method,
                                      levels = c("Unbalanced","Smoote","Oversampling"))
-performance_index |> View()
+
 performance_index |>
   ggplot(aes(x = variable, y = value, fill = Method)) + 
   geom_bar(stat = "identity", position = "dodge") +
@@ -995,3 +1001,7 @@ pooled_smote <- Reduce(`+`, IRMI.SMOTE)/length(IRMI.SMOTE)
 # Predicted class.
 class_smote <- apply(pooled_smote, 1, which.max)
 ```
+
+## Download data
+
+{{< downloadthis data/measurement_file.xlsx dname="Turtle Data" label="Download turtle data as .xlsx" icon="file-earmark-spreadsheet" type="success" >}}
