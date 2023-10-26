@@ -12,10 +12,10 @@ COPY data-raw/imputation_performance_ulna.xlsx /app/data-raw/imputation_performa
 COPY data-raw/imputation_performance_digit.xlsx /app/data-raw/imputation_performance_digit.xlsx
 
 # Docker-workflow diagram
-# COPY docker_workflow /app/docker_workflow.png
+COPY docker_workflow /app/docker_workflow.png
 
 # Dot language text file
-# COPY workflow /app/workflow.gv
+COPY workflow /app/workflow.gv
 
 # install quarto CLI
 RUN apt-get update -y && apt-get install -y \
