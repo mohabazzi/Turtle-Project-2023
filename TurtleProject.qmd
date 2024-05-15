@@ -54,11 +54,11 @@ Code compiled and curated by M.B. [Contact](mailto:mohammed_bazzi@hotmail.com)
 
 R.packages <- c("openxlsx tidyverse mice caret corrplot see smotefamily
                 ggfortify GGally MASS MuMIn DMwR2 tidyr kernlab randomForest
-                nnet gridExtra VIM lmtest RColorBrewer performance
-                ggstance visdat naniar wesanderson DescTools remotes
-                car qgraph ggeffects ggthemes knitr stargazer
+                nnet gridExtra VIM lmtest RColorBrewer performance phytools
+                ggstance visdat naniar wesanderson DescTools remotes phylosem
+                car qgraph ggeffects ggthemes knitr stargazer phytools ape Rphylopars
                 kableExtra marginaleffects generalhoslem purrr piggyback
-                magrittr checkpoint data.table DiagrammeR modelsummary")
+                magrittr checkpoint data.table DiagrammeR modelsummary MASS klaR mda")
 
 import <- function(x)
  x |> trimws() |> strsplit("\\s+") |> unlist() |>
@@ -107,7 +107,7 @@ DiagrammeR::grViz("workflow.gv")
 
 ## Docker workflow
 
-We use Docker to containerize and render our Quarto R file. A **container** is a running instance on an **image** that includes the application (e.g., the programming language interpreter needed to run a workflow) and the system libraries required by an application to run. This is a powerful tool that facilitate persistent reproducibility of analytically work.
+We use Docker to containerize and render our Quarto R file. A **container** is a running instance on an **image** that includes the application (e.g., the programming language interpreter needed to run a workflow) and the system libraries required by an application to run. This is a powerful tool that facilitate persistent reproducibility of analytical work.
 
 ```{r}
 #| fig-cap: "Docker workflow.The process of creating containers starts with a Dockerfile, which acts as a set of instructions for constructing the computational environment. This is utilized to generate an image, and ultimately, the image serves as the foundation for initiating one or multiple containers. Drawing inspired by Nüst et al. 2020, PLoS computational biology."
@@ -131,7 +131,7 @@ Turtle.Df |>
   knitr::kable() |> kable_styling(bootstrap_options = "striped", full_width = F)
 ```
 
-**Missingness.** Data missingness is moderate with a total of 32 missing values out of 288 cells (11.1% missingness). Specifically, there are 6 missing values for the variable 'Humerus length', 10 missing values for 'Ulna length', and 16 missing values for 'Manual Digit III length'.
+**Missingness.** Data missingness is moderate with a total of 32 missing values out of 288 cells (11.1%). Specifically, there are 6 missing values for the variable 'Humerus length', 10 missing values for 'Ulna length', and 16 missing values for 'Manual Digit III length'.
 
 ```{r message=FALSE,warning=FALSE,fig.cap="Pattern of missingness by dependendent variable (i.e. habitat)"}
 # Pattern of missingness.
@@ -154,9 +154,10 @@ paste0(round(mean(is.na(Turtle.Df[,4:6])), digits = 3) * 100,'%')
 # Visualize.
 visdat::vis_miss(x = Turtle.Df[,4:6],sort_miss = T,show_perc_col = T) + 
   theme(aspect.ratio = 1)
-# Manual computation.
-formatC(unlist(lapply(Turtle.Df[,4:6],function(x) sum(is.na(x))))/
-          nrow(Turtle.Df[,4:6]) * 100,digits = 2,format = "f")
+# Manual computation (same as above).
+mc_missing <-
+  formatC(unlist(lapply(Turtle.Df[,4:6],function(x) sum(is.na(x))))/
+            nrow(Turtle.Df[,4:6]) * 100,digits = 2,format = "f")
 ```
 
 **Little's MCAR test.** Our data is not missing completely at random (p \<\< 0.0001).
@@ -167,7 +168,7 @@ naniar::mcar_test(Turtle.Df[,4:6]) |>
   kable_styling(bootstrap_options = "striped")
 ```
 
-**Test of normality.** The Shapiro-Wilk test was used to assess the normality of the distribution of the predictor variables. The P-values obtained from the test were less than the chosen significance level, indicating that the null hypothesis (H0) of normality for the predictor variables could not be accepted. This was further supported by visualizing the distribution of the predictor variables using **Quantile-Quantile (Q-Q)** plots, which showed a departure from the normal distribution, specifically in the form of a right-skewed distribution for the un-transformed variables.
+**Test of normality.** The Shapiro-Wilk test was used to assess the normality of the distribution of the predictor variables. The *P*-values obtained from the test were less than the chosen significance level, indicating that the null hypothesis (H0) of normality for the predictor variables could not be accepted. This was further supported by visualizing the distribution of the predictor variables using **Quantile-Quantile (Q-Q)** plots, which showed a departure from the normal distribution, specifically in the form of a right-skewed distribution for the un-transformed variables.
 
 ```{r results='hide'}
 # Is the distribution of the data normal? Limited to extant complete specimens.
@@ -183,14 +184,14 @@ apply(X = Turtle.Df[1:77,4:6], MARGIN = 2, FUN = shapiro.test) |>
   kable_styling(bootstrap_options = "striped", full_width = F)
 ```
 
-```{r fig.cap="Normality test, data distribution, and QQ-plots. Graphic results reveal an overall right-skewness in each un-transformed numeric variable. P-values are based on a Shapiro-Wilk Normality Test"}
-# Plot using a qqplot.
+```{r fig.cap="Normality test, data distribution, and QQ-plots. Results reveal an overall right-skewness for each un-transformed numeric variable. P-values are based on a Shapiro-Wilk Normality Test"}
+# Plot.
 layout(matrix(c(1:3),nrow = 1), widths=c(3,3,3), heights=c(4,4,4),respect = TRUE)
 
 for(i in 1:ncol(Turtle.Df)) {
   if(is.numeric(Turtle.Df[1:77,i])) {
       shapiro.test(Turtle.Df[1:77,i])
-      car::qqPlot(x = Turtle.Df[1:77,i],col = scales::alpha("#b11226",.5),
+      car::qqPlot(x = Turtle.Df[1:77,i],col = scales::alpha("#B83A4B",.5),
                   layout = c(1,3),
                   envelope = F,col.lines = 'black',
                   pch = 19,cex = 1.2,xlab = '',ylab = '',
@@ -213,7 +214,7 @@ for(i in 1:ncol(Turtle.Df)) {
 trait_cor <- stats::cor(Turtle.Df |> dplyr::select_if(is.numeric),
                         use = "complete.obs",method = "spearman")
 
-corrplot::corrplot(trait_cor, tl.cex = 1,tl.srt=0,
+corrplot::corrplot(trait_cor, tl.cex = .7,tl.srt=0,
                    type = "lower",col = rev(brewer.pal(n=8, name="PuOr")),
                    addgrid.col = "grey",addCoef.col = "white",
                    sig.level = 1, insig = "blank",
@@ -229,36 +230,39 @@ corrplot::corrplot(trait_cor, tl.cex = 1,tl.srt=0,
 modelsummary::datasummary_skim(data = Turtle.Df)
 ```
 
-### Check and visualization of data balance
+### Data balance
 
 ```{r fig.cap="Data balance. Proportional representation of categorical variables"}
 # Check proportional representation of main grouping variable.
 t.prop <- prop.table(table(Turtle.Df$Habitat))
 
-barplot(t.prop, las = 1, col = c(rep("white",3),rep("#b11226",1)),
+barplot(t.prop, las = 1, col = c(rep("#2E2D29",3),rep("#b11226",1)),
         ylab = "%",lwd = 2,xlab = "Habitat", cex.lab = 1,font.lab = 2,
-        horiz = F,density = c(0,0,0,7),angle = c(0,0,0,36),
+        horiz = F,density = c(0,0,0,7),angle = c(0,0,0,36),asp = 0,
         main = "");abline(v = 3.7, lwd = 2)
-```
 
-### Heatmap
+arrows(x0 = 4, y0 = 0.3, x1 = 4, y1 = 0.25,code = 2,lwd = 2,length = .1)
+text(x = 4.4,y = 0.33, "Fossil Data", cex = .8, col = "#b11226")
+```
 
 ```{r fig.cap="Heatmap showing the number of specimens by habitat and family"}
 Turtle.Df |>
   ggplot(aes(x = Habitat, y = Higher.Taxon)) +
-  geom_bin2d(show.legend = T) +
-  scale_fill_gradientn(colours = wes_palette("Zissou1",100, type = "continuous")) +
-  labs(y = "Taxon",x = "",fill = "Count") +
+  geom_count(colour="cornflowerblue") +
+  labs(y = "",x = "") +
   coord_equal(ratio = 1.5/3) + theme_bw() +
-  theme(axis.text.x = element_text(angle = 44,hjust = 1,vjust = 1)) + 
-  theme_clean()
+  theme(axis.text.x = element_text(angle = 44,hjust = 1,vjust = 1))
 ```
 
 ### Outlier detection
 
-```{r "Box-and-whisker plot visualization. Inspection of potential outliers."}
+```{r}
+layout(matrix(1,1),respect = T)
 boxplot(Turtle.Df[1:77,c("Humerus.Length","Ulna.Length","Digit.III")],
-        ylab = "Values")
+        ylab = "Values", col = "#53565A",
+        pars = list(outcol = "#2D716F", outpch = 19),
+        main = "Box-and-whisker plot visualization",
+        sub = "Inspection of potential outliers")
 ```
 
 ```{r fig.cap="Box-and-whisker plot visualization. Inspection of potential outliers by categorical variable"}
@@ -362,21 +366,23 @@ w <- function(x){
 
 irmi_var <- lapply(irmi_extinct,FUN = w)
 
-# Combine dataframes.
+# Combine data frames.
 irmi_multiple <- irmi_var |> bind_rows(.id = "id")
 irmi_multiple |>
   tidyr::pivot_longer(cols = -c(id,taxa), names_to = "variable", values_to = "value") |>
   ggplot(aes(x = taxa, y = value, color = variable)) +
   geom_point() +
   scale_color_manual(values = c("#00AFBB", "#E7B800", "#FC4E07")) +
-  scale_fill_manual(values = c("#00AFBB", "#E7B800", "#FC4E07")) +
+  scale_fill_manual(values =  c("#00AFBB", "#E7B800", "#FC4E07")) +
   stat_summary(fun = mean, geom = "point", fill = "grey70", color = "black") +
   stat_summary(fun.data = mean_cl_normal, geom = "errorbar", width = 0.2, color = "black") +
   facet_wrap(~ variable,scales = "free") +
-  labs(y = "Value", x = "", title = "Imputation variance across all irmi-generated datasets",
+  labs(y = "Value", x = "", title = "Imputation variance across IRMI-computed trait dataset",
        subtitle = "95% confidence intervals") +
+  theme_bw() +
   theme(axis.text.x = element_text(angle = 45,hjust = 1, vjust = 1,size = 2),
-        aspect.ratio = 1/2,legend.position = "none")
+        aspect.ratio = 1,legend.position = "none",
+        plot.title = element_text(face = "bold"))
 ```
 
 ### Imputation performance
@@ -384,7 +390,7 @@ irmi_multiple |>
 ```{r results='hide'}
 # Randomly introduce missing values.
 pM.extant <- clean.Df[1:67,1:3]
-# Custom function.
+
 generate_random_NA <- function(df, missing_prob = 0.1) {
   # Copy.
   df_NA <- df
@@ -416,7 +422,7 @@ Missing_50 <- generate_random_NA(pM.extant,missing_prob = 0.5)
 
 # List.
 random_list <- list(Missing_20,Missing_30,Missing_40,Missing_50)
-# Run irmi imputation on all data frames and save results.
+# Run IRMI imputation on all data frames and save results.
 impute_list <- vector(mode='list', length=4)
 
 set.seed(4)
@@ -464,7 +470,7 @@ cor_digit_list <- lapply(Digit_list, function(x) cor(x[,"Digit.Imputed"],
 
 **Results**:
 
-```{r fig.cap="The figures display bivariate plots comparing observed and imputed values per variable, with the median represented by solid lines."}
+```{r}
 # Graphic layout,
 layout(matrix(c(1:3), nrow = 1, ncol = 3,byrow = FALSE),
        heights = c(2.5,2.5,2.5),widths = c(2,2,2),
@@ -476,28 +482,33 @@ for(i in irmi.cols) {
   if(is.numeric(compFin.Df[,i]))
     plot(compFin.Df[,i], col = c("#1c4966", "#b11226")[compFin.Df$Measurement],
          pch = 21, bg = "white",
-         ylab = colnames(compFin.Df)[i], font.lab = 2)
+         ylab = colnames(compFin.Df)[i], font.lab = 2, sub = "Median represented by solid lines") 
   abline(h = median(compFin.Df[compFin.Df$Measurement == "Raw",i]), col = "#b11226")
   abline(h = median(compFin.Df[compFin.Df$Measurement == "Imputed",i]),
          col = "#1c4966")
-  legend("topleft",legend = c("Raw","Imputed"),
-         col = c("#b11226","#1c4966"),lty = 1,lwd = 2, border = FALSE,
-         bty = "n",cex = .3)
+    # legend("topleft",legend = c("Raw","Imputed"),
+    #      col = c("#b11226","#1c4966"),lty = 1,lwd = 2, border = FALSE,
+    #      bty = "n",cex = .3)
 }
+
+# Add title
+mtext(text = "Bivariate plots comparing observed and imputed values per variable",
+      side = 3,line = 2,at = -90,cex = 1,font = 2); par(op)
 ```
 
-### MICE (Multiple imputation by chained equations)
+### Multiple imputation by chained equations
 
 ```{r results='hide',message=FALSE, fig.cap="Box-and-whisker plot comparing the distribution of observed and imputed data for multiple imputation using chained equations"}
 # Object contain 11 imputed dataset(s)
-# Predictive mean matching
+# Predictive mean matching.
 imp.3 <- mice(data = clean.Df[,1:3], m = 11, method = "pmm",
               seed = 1991,print = T, remove.collinear = F,printFlag = FALSE)
 
 # Check predictor matrix
 imp.3$predictorMatrix
+
 # Diagnostics.
-stripplot(imp.3,  pch = c(1, 20))
+# stripplot(imp.3,  pch = c(1, 20))
 
 # Check correlation between variables.
 with(imp.3, cor(Humerus.Length, Ulna.Length))
@@ -518,6 +529,145 @@ complete_mice <- mice::complete(data = imp.3,"all",inc = FALSE)
 taxa_labels <- rownames(complete_mice[[1]])
 complete_mice <- lapply(complete_mice,
                         function(x) cbind(x, taxa = as.factor(taxa_labels)))
+```
+
+## Phylogenetic Imputation {#phylo-impute}
+
+We used the Rphylopars (v. 0.3.10) R package (Goolsby et al. 2016) to estimate missing data while accounting for both within-species variation and the evolutionary relationships between species. Prior to phylogenetic imputation, we first pruned our tree topology using functions from the ape R package to match the taxa in our trait dataset. The final tree and trait data included four fossil taxa (*Meiolania platyceps*, *Strzeleckemys bunurongi*, *Spoochelys ormondea*, *Palaeochersis talampayensis*) and 17 extant taxa (*Emys orbicularis*, *Trachemys scripta*, *Chrysemys picta*, *Platysternon megacephalum*, *Gopherus polyphemus*, *Dermochelys coriacea*, *Chelonia mydas*, *Caretta caretta*, *Sternotherus odoratus*, *Kinosternon flavescens*, *Chelydra serpentina*, *Pelodiscus sinensis*, *Lissemys punctata*, *Carettochelys insculpta*, *Podocnemis expansa*, *Chelodina longicollis*, *Chelus fimbriatus*). We log-10 transformed our predictor variables, run phylogenetic imputations, and converted both raw and estimated values back to metric scale. The imputed values were subsequently compared against the IRMI generated estimates.
+
+**Result**
+
+Correlation test shows that imputed trait data using phylogentic imputation versus iterative robust model-based imputation converge on approximate estimates. Some minor variation is however indicated for the Digit III variable (correlation coefficient = 0.81). Using both multinomial logsitic regression and LDA (see section: @lda).
+
+```{r}
+# Tree.
+phylo_tree <- phytools::readNexus(file = "tree/turtle_phlyo.tre")
+
+# phylo_tree |> 
+#   plot(cex = .5); axisPhylo()
+
+# Prepare data.
+tree_data <- Turtle.Df |> 
+  mutate(species_names = case_when(Species == "Emys (Emydoidea) blandingii" ~ "Emys blandingii",
+                                   Species == "Emys (Clemmys) marmorata" ~ "Emys marmorata",
+                                   Species == "Glyptemys (Clemmys) insculpta" ~ "Glyptemys insculpta",
+                                   Species == "Cuora (Pyxidea) mouhotii" ~ "Cuora mouhotii", TRUE ~ Species)) |> 
+  mutate(species_names = gsub(" ", "_", species_names)) |> 
+  dplyr::select(any_of(c("species_names","Humerus.Length","Ulna.Length","Digit.III","Group")))
+
+rownames(tree_data) <- NULL
+
+# Check
+matching_taxa <- generics::intersect(x = phylo_tree$tip.label,y = tree_data$species_names) # 21 taxa in tree.
+# Prune Tree.
+pruned_tree <- drop.tip(phy = phylo_tree,tip = phylo_tree$tip.label[-match(matching_taxa, phylo_tree$tip.label)])
+pruned_tree |> 
+  phytools::plotTree(ftype="i",lwd=1,fsize=0.6,type="fan",part=0.88)
+
+# Subset trait data.
+pruned_data <- 
+  tree_data[tree_data$species_names %in% matching_taxa,] |> 
+  as_tibble() |> 
+  as.data.frame()
+
+exEx <- as.factor(setNames(pruned_data$Group,pruned_data$species_names))
+
+# Plot.
+dotTree(pruned_tree,exEx,colors = setNames(c("black","red"),
+    c("Extinct","Extant")),ftype="i")
+
+names(pruned_data)[1] <- "species"
+names(pruned_data)[2] <- "V1"
+names(pruned_data)[3] <- "V2"
+names(pruned_data)[4] <- "V3"
+
+# Numeric variables needs to be log10 transformed.
+pruned_data <- rapply(pruned_data, f = log10, classes = c("numeric", "integer"), how = "replace")
+pdc <- pruned_data[,-5]
+
+# Create list.
+imp.PhyloData <- list(pdc,pruned_tree)
+
+names(imp.PhyloData)[[1]] <- "trait"
+names(imp.PhyloData)[[2]] <- "tree"
+
+# Phylogenetic Imputation using phylopars.
+PPE <- 
+  phylopars(trait_data = imp.PhyloData$trait,tree = imp.PhyloData$tree)
+
+# Transform back to units back to centimeter measurements.
+PPE$ind_recon[,2:4] <- 10^PPE$ind_recon[,2:4]
+
+# Imputed fossil taxa.
+pImp <- 
+  PPE$ind_recon[c(22:35),] |> as_tibble() |> 
+  as.data.frame() |> 
+  dplyr::rename("taxa" = "trait_data.species")
+
+# Original specimen names
+os_name <- 
+  grep(pattern = "Spoochely|Strzeleckemys|Meiolania platyceps",x =  rownames(Turtle.Df),value = T)
+
+# Subset IRMI dataset to match taxa in the phylopars dataset.
+irmi_subset <- lapply(irmi_var, function(x) x[os_name, , drop = FALSE])
+
+# Plot.
+par(mfrow = c(3,4))
+for(i in seq_along(irmi_subset)) {
+  # IRMI results
+  plot(irmi_subset[[i]]$Humerus.Length, col = "#014240", pch = 19, ylab = "Humerus Length", 
+       main = paste("IRMI vs phylogenetic imputation", i), cex.main = .8, font.lab = 2)
+  # Phylogenetic results
+  points(pImp$V1,col = scales::alpha("#7F2D48",.5), pch = 14)
+}
+
+
+# Plot.
+par(mfrow = c(3,4))
+for(i in seq_along(irmi_subset)) {
+  # IRMI results
+  plot(irmi_subset[[i]]$Ulna.Length, col = "#014240", pch = 19, ylab = "Ulna Length", 
+       main = paste("IRMI vs phylogenetic imputation", i), cex.main = .8)
+  # Phylogenetic results
+  points(pImp$V2,col = scales::alpha("#7F2D48",.5), pch = 14)
+}
+
+# Plot estimated digit values.
+par(mfrow = c(3,4))
+for(i in seq_along(irmi_subset)) {
+  # IRMI results
+  plot(irmi_subset[[i]]$Digit.III, col = "#014240", pch = 19, ylab = "Digit Length", 
+       main = paste("IRMI vs phylogenetic imputation", i), cex.main = .8, 
+       ylim = c(0,80))
+  # Phylogenetic results
+  points(pImp$V3,col = scales::alpha("#7F2D48",.5), pch = 14)
+}
+```
+
+```{r}
+# Run correlation test
+lapply(irmi_subset, function(x) cor(x[,"Humerus.Length"],pImp[,"V1"])) |> 
+  unlist() |> 
+  as.data.frame() |> setNames(nm = "Var") |>
+  dplyr::select("Var") |> 
+  ggstatsplot::gghistostats(x = "Var", bf.message = F,bf.prior = F,results.subtitle = F, xlab = "Pearson correlation", title = "Humerus variable") +
+  theme(aspect.ratio = 1)
+
+  
+lapply(irmi_subset, function(x) cor(x[,"Ulna.Length"],pImp[,"V2"])) |> 
+  unlist() |> 
+  as.data.frame() |> setNames(nm = "Var") |>
+  dplyr::select("Var") |> 
+  ggstatsplot::gghistostats(x = "Var", bf.message = F,bf.prior = F,results.subtitle = F, xlab = "Pearson correlation", title = "Ulna variable") +
+  theme(aspect.ratio = 1)
+
+
+lapply(irmi_subset, function(x) cor(x[,"Digit.III"],pImp[,"V3"])) |> 
+  unlist() |> 
+  as.data.frame() |> setNames(nm = "Var") |>
+  dplyr::select("Var") |> 
+  ggstatsplot::gghistostats(x = "Var", bf.message = F,bf.prior = F,results.subtitle = F, xlab = "Pearson correlation", title = "Digit III variable") +
+  theme(aspect.ratio = 1)
 ```
 
 ------------------------------------------------------------------------
@@ -600,13 +750,11 @@ melt_boxplot <- reshape2::melt(all.Df)
 ggplot(melt_boxplot, mapping = aes(x = Habitat, y = value, fill = Habitat)) +
   geom_boxplot(aes(Habitat),alpha = 1, outlier.size = 2) +
   stat_summary(fun.data = mean_cl_boot, geom = "errorbar",width = .10,
-               linetype = 1, col = "black") +
+               linetype = 1, linewidth = 1.2, col = "white") +
   stat_summary(fun = "mean", geom = "point",
                position = position_dodge(width = 1),
-               bg = 'white',color = "black", pch = 21) +
-  # geom_jitter() +
-  scale_fill_manual(values = c("#0072B2", "#E69F00", "#009E73")) +
-  theme_minimal() +
+               bg = 'white',color = "black", pch = 21, size = 3) +
+  scale_fill_manual(values = c("#2D716F","#2E2D29","#B83A4B")) +
   geom_rug(sides = 'l') +
   theme(aspect.ratio = 1/5) +
   labs(x = "", y = "") +
@@ -667,8 +815,8 @@ Final.Df <- all.Df[c(1:2,4)]
 # Training and testing for the purpose of cross-validation.
 set.seed(123)
 idx <- caret::createDataPartition(Final.Df$Habitat, p = 0.7, list = FALSE)
-train_data <- Final.Df[idx,] # 48
-test_data <- Final.Df[-idx,] # 19
+train_data <- Final.Df[idx,]  # 48
+test_data <-  Final.Df[-idx,] # 19
 
 # Null (or empty) multinomial model. By default a basement/reference level will be selected alphabetically.The logistic coefficient is the expected amount of change in the logit for each one unit change in the predictor.
 set.seed(1995)
@@ -825,7 +973,7 @@ var.imp |> ggplot(aes(x=var, y=Overall)) +
 
 #### Drop-in-deviance test
 
-```{r}
+```{r message=FALSE}
 mod.4 <- nnet::multinom(Habitat ~ Digit.III,
                         data = train_data,
                         Hess = T,model = T) |> suppressMessages()
@@ -847,7 +995,7 @@ fit.cv <- caret::train(Habitat ~., data = train_data, method = "multinom",
 
 ## Classification table of MNL.
 confusionMatrix(data = fit.cv)
-# Misclassification rate
+# Mis-classification rate
 cat("Misclassification rate:", paste0(round(1 - 0.8329, 2)),"%")
 
 # Model validation/performance using the test set.
@@ -911,7 +1059,7 @@ pred_df_long <- tidyr::gather(pred_df, key = "habitat_type", value = "predicted_
 # Probability distribution of imbalanced categories
 ggplot(pred_df_long, aes(x = "", y = predicted_prob, fill = habitat_type)) +
   geom_bar(stat = "identity", width = 1) +
-  scale_fill_manual(values = c("#0072B2", "#E69F00", "#009E73")) +
+  scale_fill_manual(values = c("#2D716F","#2E2D29","#B83A4B")) +
   coord_polar("y", start = 0) +
   facet_wrap(~ taxon, nrow = 3)+
   theme_void() +
@@ -931,9 +1079,9 @@ ggplot(pred_df_long, aes(x = "", y = predicted_prob, fill = habitat_type)) +
             ymin = -Inf,ymax = Inf)
 ```
 
-### SMOTE (class imbalance)
+### Smote (class imbalance)
 
-SMOTE synthesizes new minority instances between existing minority instances. After synthesizing new minority records, the imbalance shrinks from 7 semi-aquatic to 21 semi-aquatic instances.
+SMOTE synthesizes new minority instances between existing minority records After synthesizing new minority records, the imbalance shrinks from 7 semi-aquatic to 21 semi-aquatic instances.
 
 ```{r eval=TRUE,results='hide'}
 # SMOTE (Synthetic Minority Oversampling Technique)
@@ -1000,6 +1148,101 @@ for(i in seq_along(miss_list)) {
 pooled_smote <- Reduce(`+`, IRMI.SMOTE)/length(IRMI.SMOTE)
 # Predicted class.
 class_smote <- apply(pooled_smote, 1, which.max)
+```
+
+## Discriminant analysis {#lda}
+
+```{r warning=FALSE, message=FALSE}
+# Linear discriminant analysis (LDA)
+lda_model <- lda(Habitat ~ ., data = train_data) 
+
+lda_predictions <- predict(lda_model)
+
+# Model accuracy 
+lda_accuracy <- 
+  bind_cols(
+    predict(lda_model,test_data)$class,
+    test_data$Habitat
+    ) |> setNames(nm = c("Predicted", "Actual"))
+
+round(mean(lda_accuracy$Predicted == lda_accuracy$Actual),4) * 100
+
+# Plot.
+data.frame(outcome = train_data$Habitat,lda = lda_predictions$x) |> 
+  ggplot(mapping = aes(x = lda.LD1, y = lda.LD2, color = outcome)) +
+  geom_point(shape = 19, size = 2, alpha = .3) +
+  scale_fill_manual(values =  c("#2D716F","#2E2D29","#B83A4B"))  +
+  scale_color_manual(values = c("#2D716F","#2E2D29","#B83A4B")) +
+  labs(x = "LDA1 (99.41%)",
+       y = "LDA2 (0.59%)") +
+  stat_ellipse() +
+  geom_rug() +
+  theme_bw() +
+  theme(aspect.ratio = 1)
+
+# Plot.
+klaR::partimat(Habitat~., data = train_data, method="lda",imageplot = T, col.correct = "white",
+               main = "Partition Plot",col.wrong = "#2D716F", image.colors = c("#2E2D29","white","#B83A4B"))
+
+# Prediction on input data (Phylogentic Imputed Data).
+pImDd <- 
+  pImp |>
+  dplyr::select(-c(1,3)) |> 
+  dplyr::rename("Humerus.Length" = "V1", "Digit.III" = "V3")
+
+predict(lda_model,pImDd,type = "class")[[2]] |> 
+  as.data.frame() |> 
+  mutate(Specimen = os_name) |> 
+  tidyr::pivot_longer(cols = c("Aquatic", "Semi-aquatic", "Terrestrial"),names_to = "Habitat",values_to = "Predictions") |> 
+  ggplot(mapping = aes(x = "", y = Predictions, fill = Habitat)) +
+  geom_bar(stat = "identity", width = 1, color = "#006B81") +
+  labs(x = "%", y = NULL,
+       title = "Fossil ecologies",
+       subtitle = "Predicted probabilities based on phylogenetic imputed trait estimates") +
+  scale_fill_manual(values = c("#2D716F","#2E2D29","#B83A4B")) +
+  coord_polar("y", start = 0) +
+  geom_text(aes(label = paste0(round(Predictions*100), "%")),
+            position = position_stack(vjust = 0.5), size = 3,color = "white") +
+  facet_wrap(~ Specimen, nrow = 5)+
+  theme_void() +
+  theme(strip.text = element_text(size = 5),
+        plot.title = element_text(face = "bold"))
+```
+
+```{r warning=FALSE}
+pFDA_data <- 
+  bind_rows(
+  pruned_data |> slice(1:21) |> 
+    mutate(Habitat = c(rep("Aquatic",18),rep("Terrestrial",1),rep("Aquatic",2))) |> mutate(across(where(is.numeric), ~10^.)),
+  pImp |> mutate(Group = "Extinct", Habitat = "Unknown") |> dplyr::rename("species" = "taxa") |> 
+    dplyr::add_row(species = "Palaeochersis_talampayensis", 
+                   V1 = 28.0, V2 = 22.0, V3 = 13.0,
+                   Group = "Extinct", Habitat = "Unknown")
+)
+
+
+# Average dataset needs to be created.
+ave_pFDA <- 
+  pFDA_data |> 
+  dplyr::group_by(species, Habitat,Group) |> 
+  summarise(across(where(is.numeric), mean, na.rm = TRUE), .groups = "drop") |> 
+  tibble::column_to_rownames(var = "species")
+
+
+# Traits as matrix and rownames.
+pD <- ave_pFDA |> 
+  # dplyr::filter(Group == "Extant") |> 
+  dplyr::select(any_of(c("V1","V2","V3"))) |> 
+  as.matrix(rownames.force = T)
+
+# Habitat as factor with levels.
+pH <- 
+  ave_pFDA |> 
+  # dplyr::filter(Group == "Extant") |> 
+  dplyr::select("Habitat") |> as.vector()
+
+pH_var <- as.factor(pH$Habitat)
+
 ```
 
 ## Download data
