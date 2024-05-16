@@ -54,7 +54,7 @@ Code compiled and curated by M.B. [Contact](mailto:mohammed_bazzi@hotmail.com)
 
 R.packages <- c("openxlsx tidyverse mice caret corrplot see smotefamily
                 ggfortify GGally MASS MuMIn DMwR2 tidyr kernlab randomForest
-                nnet gridExtra VIM lmtest RColorBrewer performance phytools
+                nnet gridExtra VIM lmtest RColorBrewer performance
                 ggstance visdat naniar wesanderson DescTools remotes phylosem
                 car qgraph ggeffects ggthemes knitr stargazer phytools ape Rphylopars
                 kableExtra marginaleffects generalhoslem purrr piggyback

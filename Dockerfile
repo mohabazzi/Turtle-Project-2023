@@ -73,6 +73,12 @@ RUN R -e "install.packages(c(\
 	'randomForest', \
 	'smotefamily', \
 	'modelsummary', \
+	'phylosem', \
+	'phytools', \
+	'ape', \
+	'klaR', \
+	'mda', \
+	'MASS', \
 	'piggyback', \
 	'generalhoslem'))"
 
