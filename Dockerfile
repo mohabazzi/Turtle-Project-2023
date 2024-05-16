@@ -14,6 +14,9 @@ COPY data-raw/imputation_performance_humerus.xlsx /app/data-raw/imputation_perfo
 COPY data-raw/imputation_performance_ulna.xlsx /app/data-raw/imputation_performance_ulna.xlsx
 COPY data-raw/imputation_performance_digit.xlsx /app/data-raw/imputation_performance_digit.xlsx
 
+# Copy added images
+COPY docker_workflow.png /app/docker_workflow.png
+
 # install quarto CLI
 RUN apt-get update -y && apt-get install -y wget \
     && wget https://github.com/quarto-dev/quarto-cli/releases/download/v1.3.450/quarto-1.3.450-linux-amd64.deb \
@@ -74,6 +77,7 @@ RUN R -e "install.packages(c(\
     'modelsummary', \
     'Rphylopars', \
     'phytools', \
+    'ggstatsplot', \
     'ape', \
     'klaR', \
     'mda', \
