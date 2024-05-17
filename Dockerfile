@@ -77,7 +77,6 @@ RUN R -e "install.packages(c(\
     'modelsummary', \
     'Rphylopars', \
     'phytools', \
-    'ggstatsplot', \
     'ape', \
     'klaR', \
     'mda', \

@@ -55,7 +55,7 @@ Code compiled and curated by M.B. [Contact](mailto:mohammed_bazzi@hotmail.com)
 R.packages <- c("openxlsx tidyverse mice caret corrplot see smotefamily
                 ggfortify GGally MASS MuMIn DMwR2 tidyr kernlab randomForest
                 nnet gridExtra VIM lmtest RColorBrewer performance
-                ggstance visdat naniar wesanderson DescTools remotes ggstatsplot
+                ggstance visdat naniar wesanderson DescTools remotes
                 car qgraph ggeffects ggthemes knitr stargazer phytools ape Rphylopars
                 kableExtra marginaleffects generalhoslem purrr piggyback
                 magrittr checkpoint data.table DiagrammeR modelsummary MASS klaR mda")
@@ -649,25 +649,25 @@ for(i in seq_along(irmi_subset)) {
 lapply(irmi_subset, function(x) cor(x[,"Humerus.Length"],pImp[,"V1"])) |> 
   unlist() |> 
   as.data.frame() |> setNames(nm = "Var") |>
-  dplyr::select("Var") |> 
-  ggstatsplot::gghistostats(x = "Var", bf.message = F,bf.prior = F,results.subtitle = F, xlab = "Pearson correlation", title = "Humerus variable") +
-  theme(aspect.ratio = 1)
+  dplyr::select("Var")
+  # gghistostats(x = "Var", bf.message = F,bf.prior = F,results.subtitle = F, xlab = "Pearson correlation", title = "Humerus variable") +
+  # theme(aspect.ratio = 1)
 
   
 lapply(irmi_subset, function(x) cor(x[,"Ulna.Length"],pImp[,"V2"])) |> 
   unlist() |> 
   as.data.frame() |> setNames(nm = "Var") |>
-  dplyr::select("Var") |> 
-  ggstatsplot::gghistostats(x = "Var", bf.message = F,bf.prior = F,results.subtitle = F, xlab = "Pearson correlation", title = "Ulna variable") +
-  theme(aspect.ratio = 1)
+  dplyr::select("Var") 
+  # gghistostats(x = "Var", bf.message = F,bf.prior = F,results.subtitle = F, xlab = "Pearson correlation", title = "Ulna variable") +
+  # theme(aspect.ratio = 1)
 
 
 lapply(irmi_subset, function(x) cor(x[,"Digit.III"],pImp[,"V3"])) |> 
   unlist() |> 
   as.data.frame() |> setNames(nm = "Var") |>
-  dplyr::select("Var") |> 
-  ggstatsplot::gghistostats(x = "Var", bf.message = F,bf.prior = F,results.subtitle = F, xlab = "Pearson correlation", title = "Digit III variable") +
-  theme(aspect.ratio = 1)
+  dplyr::select("Var") 
+  # gghistostats(x = "Var", bf.message = F,bf.prior = F,results.subtitle = F, xlab = "Pearson correlation", title = "Digit III variable") +
+  # theme(aspect.ratio = 1)
 ```
 
 ------------------------------------------------------------------------
