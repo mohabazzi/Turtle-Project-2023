@@ -107,7 +107,7 @@ DiagrammeR::grViz("workflow.gv")
 
 ## Docker workflow
 
-We use Docker to containerize and render our Quarto R file. A **container** is a running instance on an **image** that includes the application (e.g., the programming language interpreter needed to run a workflow) and the system libraries required by an application to run. This is a powerful tool that facilitate persistent reproducibility of analytical work.
+We use Docker to containerize and render our Quarto R file. A **container** is a running instance on an **image** that includes the application (e.g., the programming language interpreter needed to run a workflow) and the system libraries required by an application to run. This is a powerful tool that facilitate persistent reproducibility of analytical work. Our containerized working environment can be accessed via [Dockerhub](<https://hub.docker.com/repository/docker/mohamadbazzi/turtle-image/general>).
 
 ```{r}
 #| fig-cap: "Docker workflow.The process of creating containers starts with a Dockerfile, which acts as a set of instructions for constructing the computational environment. This is utilized to generate an image, and ultimately, the image serves as the foundation for initiating one or multiple containers. Drawing inspired by Nüst et al. 2020, PLoS computational biology."
@@ -610,7 +610,9 @@ os_name <-
 
 # Subset IRMI dataset to match taxa in the phylopars dataset.
 irmi_subset <- lapply(irmi_var, function(x) x[os_name, , drop = FALSE])
+```
 
+```{r}
 # Plot.
 par(mfrow = c(3,4))
 for(i in seq_along(irmi_subset)) {
@@ -644,7 +646,7 @@ for(i in seq_along(irmi_subset)) {
 }
 ```
 
-```{r}
+```{r results='hide'}
 # Run correlation test
 lapply(irmi_subset, function(x) cor(x[,"Humerus.Length"],pImp[,"V1"])) |> 
   unlist() |> 
@@ -779,17 +781,11 @@ ggplot(melt_boxplot, mapping = aes(x = Habitat, y = value, fill = Habitat)) +
 3.  We fitted a **MLR-model** using the full dataset (i.e., here also refereed to as training set) for which habitat ID's were available to estimate nominal outcome variables.
 
     -   This dataset have already been pre-processed with influential outlier points omitted.
-
     -   The analysis was performed on the raw-data and not on log-10 transformed variables.
-
     -   The Aquatic class was used as the baseline category.
-
     -   We validated the **accuracy** of this model by examining the match between predicted vs. actual outcomes.
-
     -   We also computed other metrics (e.g., Kappa, Precision, Recall, and F-Measure score).
-
     -   We also conducted a **drop-in-deviance test** to determine the influence of potential non-informative predictors on our main model.
-
     -   We proceeded to visualize the prediction results using stacked bar plots with the probabilities of each category shown by taxa.
 
 4.  We proceeded to estimate response probabilities on the **IRMI** datasets (both single and multiple). We summarized the probabilities across all iterations and visualized the results using pie graphs.
@@ -799,9 +795,7 @@ ggplot(melt_boxplot, mapping = aes(x = Habitat, y = value, fill = Habitat)) +
 **Model terms**
 
 -   Habitat = Unordered nominal (i.e., categorical or polytomous 'dependent/response' variable).
-
 -   Humerus Length = numeric independent/predictor variable.
-
 -   Digit III Length = numeric independent/predictor variable.
 
 ```{r results='hide'}
